@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <link rel="icon" href="/favicon.ico" type="image/x-icon">
+        <link rel="shortcut icon" href="resources/img/favicon.ico" type="image/x-icon">
+        <title>Cheetah Webserver</title>
+
+        <script type="text/javascript">
+            
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function()
+                {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        
+                            location.reload();
+                            //window.location = "/";
+                    }
+                };
+                xhr.open("GET", "/", false);
+                xhr.setRequestHeader("Authorization", "", false);
+                xhr.send();
+
+        </script>        
+    </head>
+    <body>        
+    </body>
+</html>
