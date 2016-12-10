@@ -34,7 +34,7 @@ public class CheetahClassLoader extends URLClassLoader {
         this(findJarURLsInClasspath(), parent);
     }
 
-    private CheetahClassLoader(URL[] urls, ClassLoader parent) {
+    protected CheetahClassLoader(URL[] urls, ClassLoader parent) {
         super(urls, parent);
         super.clearAssertionStatus();
     }

@@ -94,35 +94,6 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
 
     private boolean closed = false;
 
-    /*
-    public enum MimeType {
-
-        HTML("html", "text/html", FileFormat.TEXT),
-        HTM("htm", "text/html", FileFormat.TEXT),
-        CSS("css", "text/css", FileFormat.TEXT),
-        JAVASCRIPT("js", "application/javascript", FileFormat.TEXT),
-        TXT("txt", "text/plain", FileFormat.TEXT),
-        LOG("log", "text/x-log", FileFormat.TEXT),
-        JSON("json", "application/json", FileFormat.TEXT),
-        CSV("csv", "text/csv", FileFormat.TEXT),
-        XML("xml", "text/xml", FileFormat.TEXT),
-        PDF("pdf", "application/pdf", FileFormat.BINARY),
-        GIF("gif", "image/gif", FileFormat.BINARY),
-        JPEG("jpeg", "image/jpeg", FileFormat.BINARY),
-        JPG("jpg", "image/jpeg", FileFormat.BINARY),
-        PNG("png", "image/png", FileFormat.BINARY),
-        ICO("ico", "image/vnd.microsoft.icon", FileFormat.BINARY),
-        SWF("swf", "application/x-shockwave-flash", FileFormat.BINARY),
-        GZ("gz", "application/x-gzip", FileFormat.BINARY),
-        BZ("bz", "application/x-bzip", FileFormat.BINARY),
-        BZ2("bz2", "application/x-bzip2", FileFormat.BINARY),
-        ZIP("zip", "application/zip", FileFormat.BINARY),
-        JAR("jar", "application/x-java-applet", FileFormat.BINARY),
-        ISO("iso", "application/iso-image", FileFormat.BINARY),
-        BIN("", "application/octet-stream", FileFormat.BINARY);
-
-        
-    }*/
     @Override
     public void handle(Request request, Response response) {
         logger.trace("handle Request " + request.getClass().getName());
