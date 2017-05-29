@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="/javascript/WebSocketURL"></script>
+
+        <script type="text/javascript">
+
+            websocketHost = getWebsocketRootURL();
+
+            websocket = new WebSocket(websocketHost + "/admin/Upload");
+
+            websocket.onopen = function () {
+            };
+
+            websocket.onmessage = function (evt) {
+                console.log(evt.data);
+                data = JSON.parse(evt.data);
+                if (data.MessageType === "Status") {
+
+                    message = data.Status.destinationFile + ': ' + data.Status.fileSent + '/' + data.Status.fileSize + ' - ' + data.Status.percent + '%';
+                    document.getElementById('status').innerHTML = message;
+                    
+                } else if (data.MessageType === "Redirect") {
+                    websocket.close();
+                    window.location = data.Location;
+                    
+                } else if (data.MessageType === "Error") {
+                    alert(data.errorMessage);
+                }
+            };
+
+            websocket.onerror = function (evt) {
+            };
+
+            websocket.onclose = function (evt) {
+            };
+
+            function goback() {
+                websocket.close();
+                window.location = document.referrer;
+            }
+        </script>
+    </head>
+    <body>
+        <div id="status"></div>
+        <button onclick="goback()">Close</button>   
+    </body>
+</html>
