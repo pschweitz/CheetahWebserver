@@ -11,7 +11,7 @@ import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import org.cheetah.nio.file.Path;
+import java.nio.file.Path;
 import org.simpleframework.http.Request;
 
 /**

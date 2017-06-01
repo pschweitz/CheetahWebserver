@@ -5,8 +5,9 @@
  */
 package org.cheetah.webserver;
 
+import java.nio.file.Paths;
 
-import org.cheetah.nio.file.Paths;
+
 
 
 public final class Main  {

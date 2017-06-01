@@ -7,8 +7,8 @@ package org.cheetah.webserver.page.admin;
 
 import java.net.URL;
 import java.nio.charset.Charset;
-import org.cheetah.nio.file.Files;
-import org.cheetah.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Base64;
 import org.cheetah.webserver.Page;
 import java.util.StringTokenizer;

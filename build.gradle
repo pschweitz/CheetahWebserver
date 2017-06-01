@@ -32,7 +32,38 @@ dependencies {
     runtime fileTree(dir: 'lib', include: '*.jar')
 }
 
-
 task wrapper(type: Wrapper) {
     gradleVersion = "3.5"
+}
+
+
+task packageTests(type: Jar) {
+    baseName = 'CheetahWebserverTest'
+    manifest {
+        attributes(
+        "Created-By": 'Philippe Schweitzer',
+        "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/') + ' lib/CheetahWebserver.jar',
+        "Main-Class": 'org.cheetah.webserver.CheetahWebserverTest'
+        )
+    }
+    from sourceSets.test.output
+}
+
+jar {   
+    baseName = 'CheetahWebserver'
+    manifest {
+        attributes(
+        "Created-By": 'Philippe Schweitzer',
+        "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/'),
+        "Main-Class": 'org.cheetah.webserver.CheetahWebserver'
+        )
+    }    
+}
+
+build {
+    dependsOn packageTests
+}
+
+test {
+    dependsOn packageTests
 }

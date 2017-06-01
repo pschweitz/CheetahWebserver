@@ -1,7 +1,7 @@
 package org.cheetah.webserver.page.websocket;
 
 import java.nio.charset.Charset;
-import org.cheetah.nio.file.Paths;
+import java.nio.file.Paths;
 import org.cheetah.webserver.websocket.defaults.WebSocketDefaultPage;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
