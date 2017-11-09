@@ -102,7 +102,14 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
 
     @Override
     public void handle(Request request, Response response) {
-        logger.trace("handle Request " + request.getClass().getName());
+        logger.trace("handle Request " + request.getClass().getName());  
+        
+        /*
+        TODO:
+        set charset if put inside the configuration file, aka not blank and existing..
+        */
+        
+        response.setContentType("text/html;charset=" + webserverContext.getString("WebserverOutputCharset"));
         RequestResolver requestExecutor = new RequestResolver(this, request, response);
         requestExecutor.execute();
     }
