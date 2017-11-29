@@ -285,10 +285,12 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         webserverContext.put("ThreadWorkerWebsocket", 3);
 
         webserverContext.put("WebserverMode", "Production");
+        webserverContext.put("WebserverOutputCharset", "utf-8");        
 
         webserverContext.put("WebserverName", name);
 
         webserverContext.put("WebsocketEnabled", true);
+        
 
         webserverContext.loadProperties();
 
