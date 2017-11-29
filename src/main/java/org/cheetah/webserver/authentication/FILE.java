@@ -63,6 +63,8 @@ public class FILE extends AbstractAuthenticator {
             String password = this.properties.get(key);
             if (!password.endsWith("=")) {
                 try {
+                    
+                    /* try  AES/CBC/NoPadding */
                     Cipher aesCipher = Cipher.getInstance("AES/ECB/NoPadding");
 
                     SecretKey SecKey = new SecretKeySpec(secret, "AES");

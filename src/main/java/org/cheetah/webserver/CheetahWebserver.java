@@ -63,7 +63,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
     private static Logger logger = LoggerFactory.getLogger(CheetahWebserver.class);
     public static ArrayList<String> pluginList;
 
-    public String serverName = "Cheetah WebServer/1.0";
+    public String serverName = "Cheetah WebServer/0.9";
     public String URLHTTP = "";
     public String URLWS = "";
     public String webserverName = "";
