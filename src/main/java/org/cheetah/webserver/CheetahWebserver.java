@@ -40,7 +40,9 @@ import org.simpleframework.http.Cookie;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.simpleframework.http.core.Container;
+import org.simpleframework.http.core.ContainerController;
 import org.simpleframework.http.core.ContainerTransportProcessor;
+import org.simpleframework.http.core.Controller;
 import org.simpleframework.http.socket.Frame;
 import org.simpleframework.http.socket.Session;
 import org.simpleframework.transport.Socket;
@@ -1236,4 +1238,24 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
      chrome://view-response/content/view-response.html?method=GET&uri=https%3A%2F%2F192.168.1.4%3A8080%2F&headers=&body=login.username%3Dtoto
     
      */
+
+    public Controller.STOP_STRATEGY getStopStrategy() {
+        return getControler().getStopStrategy();
+    }
+
+    public void setStopStrategy(Controller.STOP_STRATEGY s) {
+        getControler().setStopStrategy(s);
+    }
+
+    public long getStopTimeout() {
+        return getControler().getStopTimeout();
+    }
+
+    public void setStopTimeout(long l) {
+        getControler().setStopTimeout(l);
+    }
+
+    public ContainerController getControler() {
+        return this.processor.getControler();
+    }
 }

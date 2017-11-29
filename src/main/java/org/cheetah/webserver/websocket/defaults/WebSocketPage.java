@@ -11,18 +11,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.cheetah.webserver.Page;
 import org.simpleframework.common.buffer.Allocator;
 import org.simpleframework.common.buffer.ArrayAllocator;
+import org.simpleframework.http.core.ContainerController;
 import org.simpleframework.http.core.ContainerTransportProcessor;
 import org.simpleframework.http.socket.service.DirectRouter;
 import org.simpleframework.http.socket.service.Router;
 import org.simpleframework.http.socket.service.RouterContainer;
 import org.simpleframework.transport.Transport;
+import org.simpleframework.transport.TransportProcessor;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author philou
  */
-public abstract class WebSocketPage extends Page {
+public abstract class WebSocketPage extends Page implements TransportProcessor{
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(WebSocketPage.class);
 
@@ -84,6 +86,11 @@ public abstract class WebSocketPage extends Page {
 
     public RouterContainer getContainer() {
         return this.container;
+    }
+
+    @Override
+    public ContainerController getControler() {
+        return this.processor.getControler();
     }
 
 }
