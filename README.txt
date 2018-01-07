@@ -7,7 +7,7 @@ Download available from this page: https://github.com/pschweitz/CheetahWebserver
 The webserver aims to be an alternative to Tomcat for HTML dynamic pages development in Java.
 It requires less than 256MB RAM to run, while Tomcat requires 2GB.
 
-It created it to be a best choice in order to provide dynamic REST FULL web services, 
+It was created to be a best choice in order to provide dynamic REST FULL web services in Java, 
 as well as for providing the minimal technology stack in order to build web-based administration interfaces for J2SE Java programs.
 
 The webserver relies on a backend library called "simple framework" (https://github.com/ngallagher/simpleframework), 
