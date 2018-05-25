@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class CheetahClassLoader extends URLClassLoader {
 
     static Logger logger = LoggerFactory.getLogger(CheetahClassLoader.class);
-    static String[] classpaths = {"plugins", ".", "dist"};
+    static String[] classpaths = {"plugins", ".", "dist", "build/libs"};
     //static private String[] classpaths = {"plugins"};
 
     public CheetahClassLoader(ClassLoader parent) {
