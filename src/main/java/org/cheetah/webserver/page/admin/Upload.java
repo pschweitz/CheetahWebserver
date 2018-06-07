@@ -17,6 +17,8 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.cheetah.webserver.resources.upload.UploadInformation;
 import org.cheetah.webserver.resources.upload.WebSocketUploadPage;
 import org.json.JSONObject;
@@ -284,8 +286,32 @@ public class Upload extends WebSocketUploadPage {
             response.setValue("Content-Type", "text/html");
         }
 
+        /*
         if (!noProgressBar.equals("true")) {
 
+            final String destinationFileFinal = destinationFile;
+            Thread t = new Thread() {
+
+                @Override
+                public void run() {
+
+                    if (uploadInformationMap.containsKey(destinationFileFinal)) {
+
+                        UploadInformation info = uploadInformationMap.get(destinationFileFinal);
+                        while (!info.canceled || !info.finished) {
+                            webserver.distributeToWebsocketServiceMessage("org.cheetah.webserver.page.admin.Upload", String.valueOf(info.fileSent));
+
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException ex) {
+                            }
+                        }
+                    }
+                }
+
+            };
+            t.start();
+            /*
             try {
                 URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/upload/adminUpload.htm");
 
@@ -327,7 +353,9 @@ public class Upload extends WebSocketUploadPage {
                 response.setStatus(Status.NOT_FOUND);
                 logger.error("Error uploading file: " + ex.toString());
             }
+             *
         }
+        */
 
         this.webserver.distributeToWebsocketServiceMessage("org.cheetah.webserver.page.ressources.FolderWebSocket", destination.substring(fileRoot.length()));
     }
@@ -353,6 +381,9 @@ public class Upload extends WebSocketUploadPage {
 
             if (!uploadInformationMap.containsKey(destinationFile)) {
                 uploadInformationMap.put(destinationFile, uploadInformation);
+            }
+            else{
+                uploadInformationMap.replace(destinationFile, uploadInformation);
             }
         }
 

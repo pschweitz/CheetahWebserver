@@ -41,7 +41,7 @@ public class PageDefaultFolder extends Page {
 
     @Override
     public void handle(Request request, Response response) {
-                
+
         String mimeType = MimeType.getMimeType("html");
         response.setValue("Content-Type", mimeType);
 
@@ -70,7 +70,7 @@ public class PageDefaultFolder extends Page {
         if (!page.endsWith("/")) {
             page = page + "/";
         }
-                
+
         String contentOnly = request.getParameter("ContentOnly");
 
         logger.debug("ContentOnly: " + contentOnly);
@@ -108,29 +108,65 @@ public class PageDefaultFolder extends Page {
                 body.println("      <script type=\"text/javascript\" src=\"/jqwidgets/jqxcore.js\"></script>");
                 body.println("      <script type=\"text/javascript\" src=\"/jqwidgets/jqxbuttons.js\"></script>");
                 body.println("      <script type=\"text/javascript\" src=\"/jqwidgets/jqxfileupload.js\"></script>");
+                body.println("      <script type=\"text/javascript\" src=\"/jqwidgets/jqxprogressbar.js\"></script>");
                 body.println("      <script type=\"text/javascript\">");
                 body.println("          $(document).ready(function () {");
-                body.println("              $('#jqxFileUpload').jqxFileUpload({ width: 300, uploadUrl: '/admin/Upload?NoProgressBar=true&Destination=" + page + "', fileInputName: 'file' });");
+                body.println("              $('#jqxFileUpload').jqxFileUpload({ width: 300, uploadUrl: '/admin/Upload?NoProgressBar=false&Destination=" + page + "', fileInputName: 'file' });");
+        //        body.println("              $('#jqxProgressBar').jqxProgressBar({animationDuration: 0, showText: true, renderText: renderText, template: 'info', width: 250, height: 30, value: 0});");
+        //        body.println("              $('#jqxProgressBar').hide();");
+                if (this.webserver.isWebsocketEnabled()) {
+
+                    body.println("              var renderText = function(text, value) {");
+                    //                  if (value < 55) {
+                    //                      return "<span style='color: #333;'>" + text + "</span>";
+                    //                  }
+                    body.println("                  return \"<span style='color: #fff;'>\" + text + \"</span>\";");
+                    body.println("              };");
+                    body.println("              $('#jqxFileUpload').on('uploadStart', function (event) {");
+                    body.println("                  console.log(event);");
+
+                    body.println("                  json = event.args.response;");
+
+                    body.println("                  console.log(event.args)");
+                    body.println("                  console.log(json)");                    
+        //            body.println("                  $('#jqxProgressBar').show();");                    
+        //            body.println("                  openUploadWebsocket();");
+                    body.println("              });");
+                }
 
                 body.println("              $('#jqxFileUpload').on('uploadEnd', function (event) {");
+                
+        //        body.println("                  $('#jqxProgressBar').hide();");
+        //        body.println("                  closeUploadWebsocket();");
                 body.println("                  console.log(event);");
 
                 if (!this.webserver.isWebsocketEnabled()) {
                     body.println("                  folderContent = document.getElementById(\"folderContent\");");
                     body.println("                  $('#folderContent').load(document.URL + '?ContentOnly=true');");
                 }
-                body.println("                  json = event.args.response");
+                body.println("                  json = event.args.response;");
+
+                body.println("                  console.log(event.args);");
+                body.println("                  console.log(json)");
+                body.println("                  if (json === \"\") {");
+                body.println("                      json = \"{}\";");
+                body.println("                  } else {");
                 body.println("                  var n = json.search(/>{/i);");
-                body.println("                  json = event.args.response.substring(n+1)");
-                body.println("                  json = json.replace(\"</pre>\", \"\")");
+                body.println("                  json = event.args.response.substring(n+1);");
+                body.println("                  json = json.replace(\"</pre>\", \"\");");
+                body.println("                  }");
                 body.println("                  data = JSON.parse(json);");
                 body.println("                  if (data.MessageType === \"Error\") {");
-                body.println("                      alert(data.errorMessage)");
+                body.println("                      alert(data.errorMessage);");
                 body.println("                  }");
                 body.println("              });");
                 body.println("          });");
 
                 body.println("      </script>");
+
+                if (this.webserver.isWebsocketEnabled()) {
+                    body.println("      <script type=\"text/javascript\" src=\"/javascript/WebSocketUpload\"></script>");
+                }
             }
 
             if (this.webserver.isWebsocketEnabled()) {
@@ -257,6 +293,7 @@ public class PageDefaultFolder extends Page {
                 if (this.webserver.isFileUploadEnabled()) {
                     if (pluginJqwidjets) {
                         body.println("  <div id=\"jqxFileUpload\"></div>");
+        //                body.println("  <div id=\"jqxProgressBar\"></div>");
                         body.println("  <div id=\"eventsPanel\"></div>");
 
                     } else {

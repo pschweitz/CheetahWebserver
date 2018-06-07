@@ -45,7 +45,7 @@ public class WebSocketUploadService extends WebSocketDefaultService {
             JSONObject response = new JSONObject();
             while (enabled) {
 
-                logger.debug("WEBSOCKET");
+                logger.debug("WEBSOCKET UPLOAD");
 
                 for (UploadInformation uploadInformation : Upload.uploadInformationMap.values()) {
                     float percent = 0;
