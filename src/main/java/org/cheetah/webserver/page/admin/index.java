@@ -48,22 +48,49 @@ public class index extends Page {
             body.println("<html>");
             body.println("  <head>");
             body.println("      <title>Cheetah webserver administration panel</title> ");
+            body.println("      <link rel=\"stylesheet\" type=\"text/css\" href=\"/css/Cheetah\">");
             body.println("  </head>");
             body.println("<body>");
+            body.println("<div id=\"page\" class=\"page-class\">");
 
             body.println("<form action=\"/admin/ChangeProperties\"  method=\"get\">");
+
+            body.println("  <table id=\"cheetahTable\">");
+            body.println("    <tr>");
+            body.println("      <td width=\"80%\">");
+            body.println("        <input class=\"button\" type=\"submit\" value=\"Apply changes\">");
+            body.println("      </td>");
+            body.println("      <td width=\"20%\" style=\"text-align: center;\">");
+            body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");
+            body.println("        " + this.webserver.serverName);
+            body.println("      </td>");
+            body.println("    </tr>");
+            body.println("  </table>");
+
+            body.println("      <table id=\"folderContentTable\" class=\"table table-striped\">");
+            body.println("          <thead>");
+            body.println("            <tr>");
+            body.println("              <th>Configuration</th>");
+            body.println("              <th>Value</th>");
+            body.println("            </tr>");
+            body.println("          </thead>");
+            body.println("          <tbody>");
 
             for (PropertyType propertyType : WebServerContext.PropertyType.values()) {
 
                 if (!propertyType.isRequireRestart()) {
+                    body.println("            <tr>");
+                    body.println("              <td width=\"90%\">");
                     String propertyName = propertyType.name();
                     String propertyValue = this.webserver.getWebserverContext().getString(propertyName);
 
-                    body.print(propertyName + ": ");
-
+                    //                   body.print(propertyName + ": ");
+                    body.print("                " + propertyName);
+                    body.println("              </td>");
+                    body.println("              <td>");
                     if (Integer.class.isAssignableFrom(PropertyType.getClass(propertyName)) || Long.class.isAssignableFrom(PropertyType.getClass(propertyName))) {
 
-                        body.println("<input type=\"number\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" style=\"width: 50em;\"><br>");
+                        body.println("                <input type=\"number\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" style=\"width: 420px;height:28px\"><br>");
                     } else if (Boolean.class.isAssignableFrom(PropertyType.getClass(propertyName))) {
 
                         String checked = "";
@@ -71,8 +98,8 @@ public class index extends Page {
                             checked = "checked";
                         }
 
-                        body.println("<input type=\"checkbox\" " + checked + " name=\"" + propertyName + "\">");
-                        body.println("<input type=\"hidden\" name=\"" + propertyName + "\" value=\"false\" /><br>");
+                        body.println("                <input width=\"300px\" type=\"checkbox\" " + checked + " name=\"" + propertyName + "\">");
+                        body.println("                <input type=\"hidden\" name=\"" + propertyName + "\" value=\"false\" /><br>");
 
                     } else {
 
@@ -81,13 +108,18 @@ public class index extends Page {
                             checked = "checked";
                         }
 
-                        body.println("<input type=\"text\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" size=\"50\"><br>");
+                        body.println("                <input width=\"300px\" type=\"text\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" size=\"50\"><br>");
                     }
+
+                    body.println("              </td>");
+                    body.println("            </tr>");
                 }
             }
 
-            body.println(" <input type=\"submit\" value=\"Apply\">");
+            body.println("          </tbody>");
+            body.println("      </table>");
 
+            body.println("</div>");
             body.println("</body>");
             body.println("</html>");
         } else {

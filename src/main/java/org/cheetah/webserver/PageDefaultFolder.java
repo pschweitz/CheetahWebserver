@@ -81,7 +81,7 @@ public class PageDefaultFolder extends Page {
             body.println("<html>");
             body.println("  <head>");
             body.println("      <title>Cheetah webserver file browser</title> ");
-
+            body.println("      <link rel=\"stylesheet\" type=\"text/css\" href=\"/css/Cheetah\">");
             body.println("      <script type=\"text/javascript\">");
             body.println("          function updateContent() {");
             body.println("              folderContent = document.getElementById(\"folderContent\");");
@@ -112,8 +112,8 @@ public class PageDefaultFolder extends Page {
                 body.println("      <script type=\"text/javascript\">");
                 body.println("          $(document).ready(function () {");
                 body.println("              $('#jqxFileUpload').jqxFileUpload({ width: 300, uploadUrl: '/admin/Upload?NoProgressBar=false&Destination=" + page + "', fileInputName: 'file' });");
-        //        body.println("              $('#jqxProgressBar').jqxProgressBar({animationDuration: 0, showText: true, renderText: renderText, template: 'info', width: 250, height: 30, value: 0});");
-        //        body.println("              $('#jqxProgressBar').hide();");
+                //        body.println("              $('#jqxProgressBar').jqxProgressBar({animationDuration: 0, showText: true, renderText: renderText, template: 'info', width: 250, height: 30, value: 0});");
+                //        body.println("              $('#jqxProgressBar').hide();");
                 if (this.webserver.isWebsocketEnabled()) {
 
                     body.println("              var renderText = function(text, value) {");
@@ -128,16 +128,16 @@ public class PageDefaultFolder extends Page {
                     body.println("                  json = event.args.response;");
 
                     body.println("                  console.log(event.args)");
-                    body.println("                  console.log(json)");                    
-        //            body.println("                  $('#jqxProgressBar').show();");                    
-        //            body.println("                  openUploadWebsocket();");
+                    body.println("                  console.log(json)");
+                    //            body.println("                  $('#jqxProgressBar').show();");                    
+                    //            body.println("                  openUploadWebsocket();");
                     body.println("              });");
                 }
 
                 body.println("              $('#jqxFileUpload').on('uploadEnd', function (event) {");
-                
-        //        body.println("                  $('#jqxProgressBar').hide();");
-        //        body.println("                  closeUploadWebsocket();");
+
+                //        body.println("                  $('#jqxProgressBar').hide();");
+                //        body.println("                  closeUploadWebsocket();");
                 body.println("                  console.log(event);");
 
                 if (!this.webserver.isWebsocketEnabled()) {
@@ -279,21 +279,35 @@ public class PageDefaultFolder extends Page {
             body.println("      </script>");
 
             body.println("  </head>");
-            body.println("<body>");
-            body.println("  <h1>Folder: " + page + "</h1>");
+            body.println("<body>");            
+            body.println("<div id=\"page\" class=\"page-class\">");
+            
+            body.println("  <table id=\"cheetahTable\">");            
+            body.println("    <tr>");           
+            body.println("      <td width=\"80%\">");
+            body.println("        <h1>Index of file: " + page + "</h1>");           
+            body.println("      </td>");         
+            body.println("      <td width=\"20%\" style=\"text-align: center;\">");
+            body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");  
+            body.println("        " + this.webserver.serverName);           
+            body.println("      </td>");         
+            body.println("    </tr>");           
+            body.println("  </table>");
+            body.println("  <hr>");
 
-            String user = this.webserver.getUsername(request);
-            if (!user.equals("")) {
-                body.println("  <h3>logged as: " + user + "</h3><a href='/admin/Logoff'>Disconnect</a>");
-            } else {
-                body.println("  <a href='/admin/Login'>Sign-in</a>");
-            }
+            body.println("  <table id=\"headerTable\">");
+
+            body.println("    <tr>");
 
             if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && this.isUserUploadGranted(request)) {
                 if (this.webserver.isFileUploadEnabled()) {
+
+                    body.println("      <td width=\"10%\" align=\"right\"><p>Upload files: ");
+                    body.println("      </p></td>");
+                    body.println("      <td>");
                     if (pluginJqwidjets) {
                         body.println("  <div id=\"jqxFileUpload\"></div>");
-        //                body.println("  <div id=\"jqxProgressBar\"></div>");
+                        //                body.println("  <div id=\"jqxProgressBar\"></div>");
                         body.println("  <div id=\"eventsPanel\"></div>");
 
                     } else {
@@ -311,9 +325,25 @@ public class PageDefaultFolder extends Page {
                         body.println("  </p>");
                         body.println("  </form>");
                     }
+
+                    body.println("      </td>");
                 }
             }
+            
+            body.println("      <td width=\"90%\" align=\"right\">");
+            String user = this.webserver.getUsername(request);
+            if (!user.equals("")) {
+                body.println("        &nbsp;&nbsp;&nbsp;<h3>logged as: " + user + "</h3><a href='/admin/Logoff'>Disconnect</a>");
+            } else {
+                body.println("        &nbsp;&nbsp;*&nbsp;<a href='/admin/Login'>Sign-in</a>&nbsp;&nbsp;");
+            }
+            body.println("      </td>");
 
+            body.println("    </tr>");
+            body.println("    <tr>");
+            body.println("    </tr>");
+            body.println("    <tr>");
+            body.println("      <td colspan=\"3\">");
             URL url;
             if (!page.equals("/")) {
                 body.print("  <a href='javascript:;' onClick=\"parentFolder();\">");
@@ -335,19 +365,41 @@ public class PageDefaultFolder extends Page {
                     if (url != null) {
                         body.print("<img src=\"/ressources/file-icons/32px/folder-new.png\" height=\"" + imgScale + "\" width=\"" + imgScale + "\">");
                     }
-                    body.print("New Folder </a>  ");
+                    body.print("Create New Folder </a>  ");
                 }
             }
+
+            body.println("      </td>");
+            body.println("    </tr>");
+            body.println("  </table>");
+
             body.println("  <div id=\"folderContent\">");
 
         }
 
-        for (FileInformation file : RessourceFinder.listRessources(webserver, request)) {
-            displayFile(request, page, file);
+        body.println("      <table id=\"folderContentTable\" class=\"table table-striped\">");
+        body.println("          <thead>");
+        body.println("            <tr>");
+        body.println("              <th width=\"50%\">Name</th>");
+        body.println("              <th width=\"30%\" >Last Modification Date</th>");
+        body.println("              <th width=\"10%\">Size</th>");
+        if (this.webserver.isFileFolderBrowsingReadWrite()) {
+            body.println("              <th width=\"10%\">Action</th>");
         }
+        body.println("            </tr>");
+        body.println("          </thead>");
+        body.println("          <tbody>");
+        for (FileInformation file : RessourceFinder.listRessources(webserver, request)) {
+
+            displayFile(request, page, file);
+
+        }
+        body.println("          </tbody>");
+        body.println("      </table>");
 
         if (contentOnly == null || !contentOnly.equals("true")) {
             body.println("  </div>");
+            body.println("</div>");
             body.println("</body>");
             body.println("</html>");
         }
@@ -367,9 +419,9 @@ public class PageDefaultFolder extends Page {
             extention = fileIconsAlias.get(extention);
         }
 
-        body.print("  <p>");
-
-        body.print("<a href =\"" + page + fileName + "\">");
+        body.println("            <tr>");
+        body.println("              <td>");
+        body.print("                <a href =\"" + page + fileName + "\">");
 
         URL url = this.webserver.getClassLoader().getResource("ressources/file-icons/32px");
 
@@ -386,37 +438,47 @@ public class PageDefaultFolder extends Page {
             }
 
             body.print("<img src=\"/ressources/file-icons/32px/" + extention.toLowerCase() + ".png\" alt=\"img\" height=\"" + imgScale + "\" width=\"" + imgScale + "\">");
+
         }
 
-        body.print(fileName + "</a>  ");
-
+        body.print(fileName + "</a> \n");
+        body.println("              </td>");
+        body.println("              <td align=\"right\">");
         if (!file.isIsDynamic()) {
-            body.print(new Date(file.getLastModified()) + " " + formatFileSize(file.getSize()));
+            body.println("                " + new Date(file.getLastModified()));
+
+            body.println("              </td>");
+            body.println("              <td align=\"right\">");
+            body.println("                " + formatFileSize(file.getSize()) + "&nbsp;&nbsp;&nbsp;");
 
             if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && !this.webserver.getUsername(request).equals("")) {
                 if (this.webserver.isFileFolderBrowsingReadWrite()) {
 
+                    body.println("              </td>");
+                    body.println("              <td align=\"center\">");
                     if (!file.isIsPlugin()) {
 
                         url = this.webserver.getClassLoader().getResource("ressources/file-icons/32px/file-edit.png");
                         if (url != null) {
-                            body.print("&nbsp;<a href='javascript:;' onClick=\"renameFile('" + page + fileName + "');\"><img src=\"/ressources/file-icons/32px/file-edit.png\" alt=\"rename\" height=\"" + imgScale + "\" width=\"" + imgScale + "\"></a>  ");
+                            body.print("                &nbsp;<a href='javascript:;' onClick=\"renameFile('" + page + fileName + "');\"><img src=\"/ressources/file-icons/32px/file-edit.png\" alt=\"rename\" height=\"" + imgScale + "\" width=\"" + imgScale + "\"></a>  ");
                             body.print("&nbsp;<a href='javascript:;' onClick=\"deleteFile('" + page + fileName + "');\"><img src=\"/ressources/file-icons/32px/recycle-bin.png\" alt=\"delete\" height=\"" + imgScale + "\" width=\"" + imgScale + "\"></a>  ");
                         } else {
-                            body.print("&nbsp;<a href='javascript:;' onClick=\"renameFile('" + page + fileName + "');\">rename</a>  ");
+                            body.print("                &nbsp;<a href='javascript:;' onClick=\"renameFile('" + page + fileName + "');\">rename</a>  ");
                             body.print("&nbsp;<a href='javascript:;' onClick=\"deleteFile('" + page + fileName + "');\">delete</a>  ");
                         }
                     } else {
-                        body.print("&nbsp;(plugin)  ");
+                        body.print("                &nbsp;(plugin)  ");
                     }
                 }
             }
         } else {
 
-            body.print("&nbsp; (dynamic content)");
+            body.print("                &nbsp; (dynamic content)");
+            body.println("              </td>");
+            body.println("              <td>");
         }
-
-        body.println("</p>");
+        body.println("\n              </td>");
+        body.println("            </tr>");
 
     }
 

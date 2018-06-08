@@ -15,7 +15,6 @@ import org.simpleframework.http.Status;
  */
 public class PageDefault extends AbstractPageDefault {
 
-
     @Override
     public void handle(Request request, Response response) {
 
@@ -24,16 +23,33 @@ public class PageDefault extends AbstractPageDefault {
         String mimeType = MimeType.getMimeType("html");
         response.setValue("Content-Type", mimeType);
 
-        body.println("<h1>" + status.getCode() + " - " + status.getDescription() + "</h1>");
+        body.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/Cheetah\">");
+
+        body.println("<div id=\"page\" class=\"page-class\">");
+        body.println("  <table id=\"cheetahTable\">");
+        body.println("    <tr>");
+        body.println("      <td width=\"80%\">");
+        body.println("        <h1>" + status.getCode() + " - " + status.getDescription() + "</h1>");
+        body.println("      </td>");
+        body.println("      <td width=\"20%\" style=\"text-align: center;\">");
+        body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");
+        body.println("        " + this.webserver.serverName);
+        body.println("      </td>");
+        body.println("    </tr>");
+        body.println("  </table>");
+        body.println("  <hr>");
+
         body.println("<h1>" + request.getTarget() + "</h1>");
 
         if (this.e != null) {
             body.println("<p>");
-                body.println(e.toString() + "<BR>");
+            body.println(e.toString() + "<BR>");
             for (StackTraceElement element : e.getStackTrace()) {
                 body.println(element.toString() + "<BR>");
             }
             body.println("</p>");
         }
+
+        body.println("</div>");
     }
 }
