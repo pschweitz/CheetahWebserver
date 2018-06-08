@@ -289,7 +289,7 @@ public class PageDefaultFolder extends Page {
             body.println("      </td>");         
             body.println("      <td width=\"20%\" style=\"text-align: center;\">");
             body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");  
-            body.println("        " + this.webserver.serverName);           
+            body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>");           
             body.println("      </td>");         
             body.println("    </tr>");           
             body.println("  </table>");
