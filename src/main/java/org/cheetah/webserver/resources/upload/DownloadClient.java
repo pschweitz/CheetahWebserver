@@ -30,6 +30,7 @@ public class DownloadClient {
     private String destination = "";
     private String username = "";
     private String password = "";
+    private int timeout = 5000;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DownloadClient.class);
 
@@ -61,12 +62,24 @@ public class DownloadClient {
 
     }
 
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }   
+    
+
     public void download() {
 
         ReadableByteChannel rbc;
         try {
             
-            URLConnection connection = url.openConnection();            
+            URLConnection connection = url.openConnection();  
+
+            connection.setConnectTimeout(timeout);
+            connection.setReadTimeout(timeout);            
             
             if (!username.equals("")) {
                 String userpass = username + ":" + password;
