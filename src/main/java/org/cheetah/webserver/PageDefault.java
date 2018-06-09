@@ -25,7 +25,7 @@ public class PageDefault extends AbstractPageDefault {
 
         body.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/Cheetah\">");
 
-        body.println("<div id=\"page\" class=\"page-class\">");
+        body.println("<div id=\"page\" class=\"page-class container\">");
         body.println("  <table id=\"cheetahTable\">");
         body.println("    <tr>");
         body.println("      <td width=\"80%\">");
@@ -33,15 +33,20 @@ public class PageDefault extends AbstractPageDefault {
         body.println("      </td>");
         body.println("      <td width=\"20%\" style=\"text-align: center;\">");
         body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR><BR>");
-        body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>"); 
+        body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>");
         body.println("      </td>");
         body.println("    </tr>");
         body.println("  </table>");
         body.println("  <hr>");
 
-        body.println("<h1>" + request.getTarget() + "</h1>");
+        if (request.getTarget().length() > 80) {
+            body.println("<h1>" + request.getTarget().substring(0, 80) + " ...</h1>");
+        } else {
+            body.println("<h1>" + request.getTarget() + "</h1>");
+        }
 
         if (this.e != null) {
+            body.println("<BR>");
             body.println("<p>");
             body.println(e.toString() + "<BR>");
             for (StackTraceElement element : e.getStackTrace()) {
