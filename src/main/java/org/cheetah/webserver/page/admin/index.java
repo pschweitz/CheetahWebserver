@@ -57,15 +57,18 @@ public class index extends Page {
 
             body.println("  <table id=\"cheetahTable\">");
             body.println("    <tr>");
-            body.println("      <td width=\"80%\">");
-            body.println("        <input class=\"button\" type=\"submit\" value=\"Apply changes\">");
+            body.println("      <td width=\"70%\">");
+            body.println("        <h1>&nbsp;&nbsp;&nbsp;Administration page</h1>");
             body.println("      </td>");
-            body.println("      <td width=\"20%\" style=\"text-align: center;\">");
-            body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");
-            body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>"); 
+            body.println("      <td width=\"30%\" style=\"text-align: center;\">");
+            body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR><BR>");
+            body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>");
             body.println("      </td>");
             body.println("    </tr>");
             body.println("  </table>");
+            body.println("  <hr>");
+
+            body.println("        <p><input class=\"button\" type=\"submit\" value=\"Apply changes\"></p>");
 
             body.println("      <table id=\"folderContentTable\" class=\"table table-striped\">");
             body.println("          <thead>");
@@ -87,10 +90,10 @@ public class index extends Page {
                     //                   body.print(propertyName + ": ");
                     body.print("                " + propertyName);
                     body.println("              </td>");
-                    body.println("              <td>");
+                    body.println("              <td align=\"center\">");
                     if (Integer.class.isAssignableFrom(PropertyType.getClass(propertyName)) || Long.class.isAssignableFrom(PropertyType.getClass(propertyName))) {
 
-                        body.println("                <input type=\"number\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" style=\"width: 420px;height:28px\"><br>");
+                        body.println("                <input type=\"number\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" style=\"width: 368px;height:28px\"><br>");
                     } else if (Boolean.class.isAssignableFrom(PropertyType.getClass(propertyName))) {
 
                         String checked = "";
@@ -98,7 +101,7 @@ public class index extends Page {
                             checked = "checked";
                         }
 
-                        body.println("                <input width=\"300px\" type=\"checkbox\" " + checked + " name=\"" + propertyName + "\">");
+                        body.println("                <input style=\"width: 368px;\" type=\"checkbox\" " + checked + " name=\"" + propertyName + "\">");
                         body.println("                <input type=\"hidden\" name=\"" + propertyName + "\" value=\"false\" /><br>");
 
                     } else {
@@ -108,7 +111,7 @@ public class index extends Page {
                             checked = "checked";
                         }
 
-                        body.println("                <input width=\"300px\" type=\"text\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" size=\"50\"><br>");
+                        body.println("                <input style=\"width: 368px;\" type=\"text\" value=\"" + propertyValue + "\" name=\"" + propertyName + "\" size=\"50\"><br>");
                     }
 
                     body.println("              </td>");

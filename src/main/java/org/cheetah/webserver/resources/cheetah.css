@@ -34,6 +34,7 @@ body {
     background-color: #d6cecc;
     font-family: Arial, Helvetica, sans-serif;
     color: #293133;
+    font-size: 13px;
 }
 
 .page-class {
@@ -46,6 +47,10 @@ body {
     border: 2px solid;
     border-color: #293133;
     padding: 10px;
+}
+
+th{    
+    font-size: 16px;
 }
 
 h1 {
@@ -63,6 +68,11 @@ h3, thead{
 p {
     font-size: 16px;
 }
+
+a {
+    font-size: 13px;
+}
+
 a img{ position: relative; 
        top: 5px;
        margin-right: 10px;
@@ -116,4 +126,5 @@ input[type=submit]:hover, .button{
     border-radius: 5px; 
     color: #000000;
 }
+
 

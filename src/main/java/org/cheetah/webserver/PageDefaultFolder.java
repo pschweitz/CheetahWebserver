@@ -284,10 +284,10 @@ public class PageDefaultFolder extends Page {
             
             body.println("  <table id=\"cheetahTable\">");            
             body.println("    <tr>");           
-            body.println("      <td width=\"80%\">");
-            body.println("        <h1>Index of file: " + page + "</h1>");           
+            body.println("      <td width=\"70%\">");
+            body.println("        <h1>&nbsp;&nbsp;&nbsp;Index of file: " + page + "</h1>");           
             body.println("      </td>");         
-            body.println("      <td width=\"20%\" style=\"text-align: center;\">");
+            body.println("      <td width=\"30%\" style=\"text-align: center;\">");
             body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");  
             body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>");           
             body.println("      </td>");         
@@ -302,7 +302,7 @@ public class PageDefaultFolder extends Page {
             if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && this.isUserUploadGranted(request)) {
                 if (this.webserver.isFileUploadEnabled()) {
 
-                    body.println("      <td width=\"10%\" align=\"right\"><p>Upload files: ");
+                    body.println("      <td width=\"20%\" align=\"right\"><p>Upload files: ");
                     body.println("      </p></td>");
                     body.println("      <td>");
                     if (pluginJqwidjets) {
@@ -381,10 +381,10 @@ public class PageDefaultFolder extends Page {
         body.println("          <thead>");
         body.println("            <tr>");
         body.println("              <th width=\"50%\">Name</th>");
-        body.println("              <th width=\"30%\" >Last Modification Date</th>");
+        body.println("              <th width=\"25%\" >Last Modification Date</th>");
         body.println("              <th width=\"10%\">Size</th>");
         if (this.webserver.isFileFolderBrowsingReadWrite()) {
-            body.println("              <th width=\"10%\">Action</th>");
+            body.println("              <th width=\"13%\">Action</th>");
         }
         body.println("            </tr>");
         body.println("          </thead>");
