@@ -774,6 +774,18 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
             // logger.warn("WebSocket Service \"" + serviceClassName + "\" not found");
         }
     }
+    
+
+    // allows cascade sending of frames if in distribute(String) of webssocket service, it forwards to another websocket.
+    public void distributeToWebsocketServiceMessage(String serviceClassName, String message, String user) {
+
+        if (websocketServiceList.containsKey(serviceClassName)) {
+            WebSocketService webSocketService = websocketServiceList.get(serviceClassName);
+            webSocketService.send(message, user);
+        } else {
+            // logger.warn("WebSocket Service \"" + serviceClassName + "\" not found");
+        }
+    }
 
     // allows cascade sending of frames if in onframe of webssocket service, it forwards to another websocket.
     public void distributeToWebsocketServiceFrame(String serviceClassName, Session session, Frame frame) {

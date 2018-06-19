@@ -45,7 +45,8 @@ public abstract class WebSocketService implements Service{
     public abstract void join(String secWebSocketKey, String user, FrameChannel operation);
     public abstract void leave(String user);
     public abstract void distribute(Frame frame);
-    public abstract void distribute(String text);   
+    public abstract void distribute(String text); 
+    public abstract void send(String text, String user);   
         
     public WebSocketService(){    
         this.listener = new WebSocketDefaultListener((WebSocketDefaultService) this);

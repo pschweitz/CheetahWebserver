@@ -33,7 +33,7 @@ public class WebSocketDefaultService extends WebSocketService {
 
         String user = listener.getUserName(connection);
         String secWebSocketKey = connection.getRequest().getValue("Sec-WebSocket-Key");
-        
+
         if (!users.containsKey(secWebSocketKey)) {
             try {
                 socket.register(listener);
@@ -88,9 +88,9 @@ public class WebSocketDefaultService extends WebSocketService {
         logger.debug("DISTRIBUTE");
 
         try {
-            
+
             Enumeration<String> keys = users.keys();
-            
+
             while (keys.hasMoreElements()) {
                 String secWebSocketKey = keys.nextElement();
                 FrameChannel operation = sockets.get(secWebSocketKey);
@@ -116,13 +116,19 @@ public class WebSocketDefaultService extends WebSocketService {
             logger.error("Error to distribute to websocket", e);
         }
     }
-    
+
+    @Override
+    public void send(String text, String destinationUser) {
+        Frame replay = new DataFrame(FrameType.TEXT, text);
+        send(replay, destinationUser);
+    }
+
     public synchronized void send(Frame frame, String destinationUser) {
 
         try {
             for (String secWebSocketKey : users.keySet()) {
 
-                String user = users.get(secWebSocketKey);                
+                String user = users.get(secWebSocketKey);
                 if (destinationUser.equals(user)) {
 
                     FrameChannel operation = sockets.get(secWebSocketKey);
