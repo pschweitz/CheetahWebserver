@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.cheetah.webserver.Page;
-import org.json.JSONObject;
+import org.json.simple.JSONObject;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.simpleframework.http.Status;
@@ -100,7 +100,7 @@ public class RenameFile extends Page {
 
         body.println(responseJSON.toString());
 
-        if (responseJSON.getString("MessageType").equals("Success")) {
+        if (((String)responseJSON.get("MessageType")).equals("Success")) {
             
             String folder = fileName.substring(0, fileName.lastIndexOf("/") +1);            
             this.webserver.distributeToWebsocketServiceMessage("org.cheetah.webserver.page.ressources.FolderWebSocket", folder);

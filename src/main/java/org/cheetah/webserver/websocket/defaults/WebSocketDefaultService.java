@@ -27,11 +27,12 @@ public class WebSocketDefaultService extends WebSocketService {
     @Override
     public void connect(Session connection) {
 
-        logger.debug("CONNECT");
 
         FrameChannel socket = connection.getChannel();
 
         String user = listener.getUserName(connection);
+        logger.debug("Websocket CONNECT: " + user);
+        
         String secWebSocketKey = connection.getRequest().getValue("Sec-WebSocket-Key");
 
         if (!users.containsKey(secWebSocketKey)) {
@@ -54,7 +55,7 @@ public class WebSocketDefaultService extends WebSocketService {
 
     @Override
     public void join(String secWebSocketKey, String user, FrameChannel operation) {
-        logger.debug("JOIN: " + user);
+        logger.debug("Websocket JOIN: " + user);
         sockets.put(secWebSocketKey, operation);
         users.put(secWebSocketKey, user);
     }
@@ -62,7 +63,7 @@ public class WebSocketDefaultService extends WebSocketService {
     @Override
     public void leave(String secWebSocketKey) {
         String user = users.get(secWebSocketKey);
-        logger.debug("LEAVE: " + user);
+        logger.debug("Websocket LEAVE: " + user);
 
         FrameChannel frameChannel = sockets.get(secWebSocketKey);
 
@@ -85,7 +86,7 @@ public class WebSocketDefaultService extends WebSocketService {
 
     @Override
     public synchronized void distribute(Frame frame) {
-        logger.debug("DISTRIBUTE");
+        logger.debug("Websocket distribute " + WebSocketDefaultService.class.getSimpleName());
 
         try {
 
@@ -97,7 +98,7 @@ public class WebSocketDefaultService extends WebSocketService {
                 String user = users.get(secWebSocketKey);
 
                 try {
-                    logger.debug("SEND TO: " + user);
+                    logger.debug("Websocket send to: " + user);
 
                     operation.send(frame);
                 } catch (Exception e) {
@@ -135,7 +136,7 @@ public class WebSocketDefaultService extends WebSocketService {
 
                     try {
 
-                        logger.debug("SEND TO: " + user);
+                        logger.debug("Websocket send to: " + user);
 
                         operation.send(frame);
                     } catch (Exception e) {

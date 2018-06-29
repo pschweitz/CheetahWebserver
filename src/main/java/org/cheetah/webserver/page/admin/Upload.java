@@ -9,19 +9,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.cheetah.webserver.resources.upload.UploadInformation;
 import org.cheetah.webserver.resources.upload.WebSocketUploadPage;
-import org.json.JSONObject;
+import org.json.simple.JSONObject;
 import org.simpleframework.http.ContentType;
 import org.simpleframework.http.Part;
 import org.simpleframework.http.Request;
@@ -273,9 +268,9 @@ public class Upload extends WebSocketUploadPage {
             }
         }
 
-        if (responseJSON.has("MessageType")) {
+        if (responseJSON.containsKey("MessageType")) {
 
-            if (responseJSON.getString("MessageType").equalsIgnoreCase("error")) {
+            if (((String)responseJSON.get("MessageType")).equalsIgnoreCase("error")) {
                 response.setValue("Content-Type", "application/json");
                 body.print(responseJSON.toString());
                 return;

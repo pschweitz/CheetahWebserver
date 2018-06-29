@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.cheetah.webserver.Page;
-import org.json.JSONObject;
+import org.json.simple.JSONObject;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.LoggerFactory;
@@ -79,7 +79,7 @@ public class CreateFolder extends Page {
 
         body.println(responseJSON.toString());
 
-        if (responseJSON.getString("MessageType").equals("Success")) {
+        if (((String)responseJSON.get("MessageType")).equals("Success")) {
             
             String folder = folderName.substring(0, folderName.lastIndexOf("/") +1);  
             

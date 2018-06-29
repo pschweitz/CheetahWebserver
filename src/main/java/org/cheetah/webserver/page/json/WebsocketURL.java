@@ -6,8 +6,7 @@
 package org.cheetah.webserver.page.json;
 
 import org.cheetah.webserver.Page;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.json.simple.JSONObject;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.Logger;
@@ -39,11 +38,7 @@ public class WebsocketURL extends Page {
 
         logger.debug("websocketURL: " + URLWS);
 
-        try {
-            jsonResult.put("websocketURL", URLWS);
-        } catch (JSONException ex) {
-
-        }
+        jsonResult.put("websocketURL", URLWS);
 
         logger.debug("WS URL:" + jsonResult);
 

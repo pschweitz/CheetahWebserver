@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import org.cheetah.webserver.page.admin.Upload;
 import static org.cheetah.webserver.page.admin.Upload.uploadInformationMap;
-import org.json.JSONObject;
+import org.json.simple.JSONObject;
 import org.simpleframework.http.socket.CloseCode;
 import org.simpleframework.http.socket.DataFrame;
 import org.simpleframework.http.socket.Frame;
@@ -35,17 +35,20 @@ public class WebSocketUploadService extends WebSocketDefaultService {
         private boolean enabled = true;
 
         public void setEnabled(boolean enabled) {
+            logger.trace("START setEnabled(boolean)");
             this.enabled = enabled;
+            logger.trace("END setEnabled(boolean)");
         }
 
         @Override
         public void run() {
+            logger.trace("START run()");
             int i = 0;
 
             JSONObject response = new JSONObject();
             while (enabled) {
 
-                logger.debug("WEBSOCKET UPLOAD");
+                logger.debug("Websocket upload start");
 
                 for (UploadInformation uploadInformation : Upload.uploadInformationMap.values()) {
                     float percent = 0;
@@ -73,17 +76,17 @@ public class WebSocketUploadService extends WebSocketDefaultService {
                     if (uploadInformation.finished) {
 
                         response = new JSONObject();
-                        
+
                         String errorMessage = uploadInformation.errorMessage;
-                        
-                        if(errorMessage == null){
+
+                        if (errorMessage == null) {
                             errorMessage = "";
                         }
-                        
+
                         if (!errorMessage.equals("")) {
                             response.put("MessageType", "Error");
                             response.put("errorMessage", errorMessage);
-                        } else {                            
+                        } else {
                             response.put("MessageType", "Redirect");
                             response.put("Location", uploadInformation.referer);
                         }
@@ -118,11 +121,14 @@ public class WebSocketUploadService extends WebSocketDefaultService {
                 } catch (InterruptedException ex) {
                 }
             }
+
+            logger.trace("END run()");
         }
     }
 
     @Override
     public void connect(Session connection) {
+        logger.trace("START connect(Session)");
 
         if (uploadThread == null) {
             uploadThread = new UploadThread();
@@ -152,6 +158,8 @@ public class WebSocketUploadService extends WebSocketDefaultService {
             }
             logger.error("MALICIOUS trial of Sec-WebSocket-Key usurpation for user: " + users.get(secWebSocketKey) + " with key: " + secWebSocketKey + " from: " + connection.getRequest().getClientAddress().getHostName());
         }
+
+        logger.trace("END connect(Session)");
     }
 
     /*
@@ -164,6 +172,8 @@ public class WebSocketUploadService extends WebSocketDefaultService {
      */
     @Override
     public void leave(String secWebSocketKey) {
+        logger.trace("START leave(String)");
+
         String user = users.get(secWebSocketKey);
         logger.debug("LEAVE: " + user);
 
@@ -185,6 +195,8 @@ public class WebSocketUploadService extends WebSocketDefaultService {
         }
 
         System.gc();
+
+        logger.trace("END leave(String)");
     }
     /*
 
@@ -197,7 +209,7 @@ public class WebSocketUploadService extends WebSocketDefaultService {
 
     @Override
     public synchronized void distribute(Frame frame) {
-        logger.debug("DISTRIBUTE");
+        logger.debug("DISTRIBUTE " + WebSocketUploadService.class.getSimpleName()););
 
         try {
             Enumeration<String> keys = users.keys();

@@ -7,10 +7,12 @@ package org.cheetah.webserver;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
 import org.cheetah.webserver.authentication.AbstractAuthenticator;
 import org.simpleframework.http.Request;
 import org.slf4j.Logger;
@@ -27,8 +29,35 @@ public class SessionDirectory {
     //private static final SessionDirectory instance = new SessionDirectory();
     private final Hashtable<String, SessionData> sessionDatas = new Hashtable();
 
-    public SessionDirectory() {
+    public SessionDirectory(CheetahWebserver webserver) {
 
+        Thread t = new Thread("SessionDirectoryClean") {
+            @Override
+            public void run() {
+
+                while (true) {
+
+                    try {
+                        Thread.sleep(1000 * 60); // every minute
+                    } catch (InterruptedException ex) {
+                    }
+
+                    for (SessionData sessionData : sessionDatas.values()) {
+                        Date lastUseTime = sessionData.getLastUseTime();
+                        Date now = new Date();
+
+                        long diff = now.getTime() - lastUseTime.getTime();
+                        long timeoutTime = webserver.getSessionTimeout() * 60 * 1000;
+
+                        if (diff > timeoutTime) {
+                            removeSessionData(sessionData.getCookie());
+                        }
+                    }
+
+                }
+            }
+        };
+        t.start();
     }
 
     /*

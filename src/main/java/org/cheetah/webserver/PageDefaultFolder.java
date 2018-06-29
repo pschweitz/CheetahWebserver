@@ -6,6 +6,7 @@
 package org.cheetah.webserver;
 
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import org.simpleframework.http.Request;
@@ -43,8 +44,9 @@ public class PageDefaultFolder extends Page {
     public void handle(Request request, Response response) {
 
         String mimeType = MimeType.getMimeType("html");
+        
         response.setValue("Content-Type", mimeType);
-
+        
         org.simpleframework.http.Path path = request.getPath();
 
         String directory = path.getDirectory();
@@ -111,55 +113,56 @@ public class PageDefaultFolder extends Page {
                 body.println("      <script type=\"text/javascript\" src=\"/jqwidgets/jqxprogressbar.js\"></script>");
                 body.println("      <script type=\"text/javascript\">");
                 body.println("          $(document).ready(function () {");
-                body.println("              $('#jqxFileUpload').jqxFileUpload({ width: 300, uploadUrl: '/admin/Upload?NoProgressBar=false&Destination=" + page + "', fileInputName: 'file' });");
-                //        body.println("              $('#jqxProgressBar').jqxProgressBar({animationDuration: 0, showText: true, renderText: renderText, template: 'info', width: 250, height: 30, value: 0});");
-                //        body.println("              $('#jqxProgressBar').hide();");
-                if (this.webserver.isWebsocketEnabled()) {
+                if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && this.isUserUploadGranted(request)) {
+                    if (this.webserver.isFileUploadEnabled()) {
+                        body.println("              $('#jqxFileUpload').jqxFileUpload({ width: 300, uploadUrl: '/admin/Upload?NoProgressBar=false&Destination=" + page + "', fileInputName: 'file' });");
+                        //        body.println("              $('#jqxProgressBar').jqxProgressBar({animationDuration: 0, showText: true, renderText: renderText, template: 'info', width: 250, height: 30, value: 0});");
+                        //        body.println("              $('#jqxProgressBar').hide();");
+                        if (this.webserver.isWebsocketEnabled()) {
 
-                    body.println("              var renderText = function(text, value) {");
-                    //                  if (value < 55) {
-                    //                      return "<span style='color: #333;'>" + text + "</span>";
-                    //                  }
-                    body.println("                  return \"<span style='color: #fff;'>\" + text + \"</span>\";");
-                    body.println("              };");
-                    body.println("              $('#jqxFileUpload').on('uploadStart', function (event) {");
-                    body.println("                  console.log(event);");
+                            body.println("              var renderText = function(text, value) {");
+                            //                  if (value < 55) {
+                            //                      return "<span style='color: #333;'>" + text + "</span>";
+                            //                  }
+                            body.println("                  return \"<span style='color: #fff;'>\" + text + \"</span>\";");
+                            body.println("              };");
+                            body.println("              $('#jqxFileUpload').on('uploadStart', function (event) {");
+                            body.println("                  console.log(event);");
 
-                    body.println("                  json = event.args.response;");
+                            body.println("                  json = event.args.response;");
 
-                    body.println("                  console.log(event.args)");
-                    body.println("                  console.log(json)");
-                    //            body.println("                  $('#jqxProgressBar').show();");                    
-                    //            body.println("                  openUploadWebsocket();");
-                    body.println("              });");
+                            body.println("                  console.log(event.args)");
+                            body.println("                  console.log(json)");
+                            //            body.println("                  $('#jqxProgressBar').show();");                    
+                            //            body.println("                  openUploadWebsocket();");
+                            body.println("              });");
+                        }
+
+                        body.println("              $('#jqxFileUpload').on('uploadEnd', function (event) {");
+
+                        //        body.println("                  $('#jqxProgressBar').hide();");
+                        //        body.println("                  closeUploadWebsocket();");
+                        body.println("                  console.log(event);");
+
+                        if (!this.webserver.isWebsocketEnabled()) {
+                            body.println("                  folderContent = document.getElementById(\"folderContent\");");
+                            body.println("                  $('#folderContent').load(document.URL + '?ContentOnly=true');");
+                        }
+                        body.println("                  json = event.args.response;");
+                        body.println("                  if (json === \"\") {");
+                        body.println("                      json = \"{}\";");
+                        body.println("                  } else {");
+                        body.println("                      var n = json.search(/>{/i);");
+                        body.println("                      json = event.args.response.substring(n+1);");
+                        body.println("                      json = json.replace(\"</pre>\", \"\");");
+                        body.println("                  }");
+                        body.println("                  data = JSON.parse(json);");
+                        body.println("                  if (data.MessageType === \"Error\") {");
+                        body.println("                      alert(data.errorMessage);");
+                        body.println("                  }");
+                        body.println("              });");
+                    }
                 }
-
-                body.println("              $('#jqxFileUpload').on('uploadEnd', function (event) {");
-
-                //        body.println("                  $('#jqxProgressBar').hide();");
-                //        body.println("                  closeUploadWebsocket();");
-                body.println("                  console.log(event);");
-
-                if (!this.webserver.isWebsocketEnabled()) {
-                    body.println("                  folderContent = document.getElementById(\"folderContent\");");
-                    body.println("                  $('#folderContent').load(document.URL + '?ContentOnly=true');");
-                }
-                body.println("                  json = event.args.response;");
-
-                body.println("                  console.log(event.args);");
-                body.println("                  console.log(json)");
-                body.println("                  if (json === \"\") {");
-                body.println("                      json = \"{}\";");
-                body.println("                  } else {");
-                body.println("                  var n = json.search(/>{/i);");
-                body.println("                  json = event.args.response.substring(n+1);");
-                body.println("                  json = json.replace(\"</pre>\", \"\");");
-                body.println("                  }");
-                body.println("                  data = JSON.parse(json);");
-                body.println("                  if (data.MessageType === \"Error\") {");
-                body.println("                      alert(data.errorMessage);");
-                body.println("                  }");
-                body.println("              });");
                 body.println("          });");
 
                 body.println("      </script>");
@@ -173,17 +176,17 @@ public class PageDefaultFolder extends Page {
                 body.println("      <script type=\"text/javascript\" src=\"/javascript/WebSocketURL\"></script>");
                 body.println("      <script type=\"text/javascript\">");
                 body.println("      websocketHost = getWebsocketRootURL();");
-                body.println("      websocket = new WebSocket(websocketHost + \"/ressources/FolderWebSocket\")");
-                body.println("      websocket.onopen = function () {");
+                body.println("      var websocketFolder = new WebSocket(websocketHost + \"/ressources/FolderWebSocket\")");
+                body.println("      websocketFolder.onopen = function () {");
                 body.println("      }");
-                body.println("      websocket.onmessage = function (evt) {");
+                body.println("      websocketFolder.onmessage = function (evt) {");
                 body.println("          if('" + page + "' === evt.data.toString()){");
                 body.println("              updateContent();");
                 body.println("          }");
                 body.println("      };");
-                body.println("      websocket.onerror = function (evt) {");
+                body.println("      websocketFolder.onerror = function (evt) {");
                 body.println("      };");
-                body.println("      websocket.onclose = function (evt) {");
+                body.println("      websocketFolder.onclose = function (evt) {");
                 body.println("      };");
                 body.println("      </script>");
             }
@@ -202,7 +205,7 @@ public class PageDefaultFolder extends Page {
             body.println("          function parentFolder() {");
 
             if (this.webserver.isWebsocketEnabled()) {
-                body.println("              websocket.close();");
+                body.println("              try{websocketFolder.close()}catch(error){};");
             }
             body.println("              window.location = '" + parent + "';");
             body.println("          }");
@@ -213,9 +216,13 @@ public class PageDefaultFolder extends Page {
             body.println("                  xmlHttp.onreadystatechange = function() {");
             body.println("                      if (xmlHttp.readyState == 4 && xmlHttp.status == 200){");
             body.println("                      json = xmlHttp.responseText");
-            body.println("                      var n = json.search(/>{/i);");
-            body.println("                      json = json.substring(n+1)");
-            body.println("                      json = json.replace(\"</pre>\", \"\")");
+            body.println("                      if (json === \"\") {");
+            body.println("                          json = \"{}\";");
+            body.println("                      } else {");
+            body.println("                          var n = json.search(/>{/i);");
+            body.println("                          json = event.args.response.substring(n+1);");
+            body.println("                          json = json.replace(\"</pre>\", \"\");");
+            body.println("                      }");
             body.println("                      data = JSON.parse(json);");
             body.println("                      if (data.MessageType === \"Error\") {");
             body.println("                          alert(data.errorMessage)");
@@ -237,9 +244,13 @@ public class PageDefaultFolder extends Page {
             body.println("                  xmlHttp.onreadystatechange = function() {");
             body.println("                      if (xmlHttp.readyState == 4 && xmlHttp.status == 200){");
             body.println("                      json = xmlHttp.responseText");
-            body.println("                      var n = json.search(/>{/i);");
-            body.println("                      json = json.substring(n+1)");
-            body.println("                      json = json.replace(\"</pre>\", \"\")");
+            body.println("                      if (json === \"\") {");
+            body.println("                          json = \"{}\";");
+            body.println("                      } else {");
+            body.println("                          var n = json.search(/>{/i);");
+            body.println("                          json = event.args.response.substring(n+1);");
+            body.println("                          json = json.replace(\"</pre>\", \"\");");
+            body.println("                      }");
             body.println("                      data = JSON.parse(json);");
             body.println("                      if (data.MessageType === \"Error\") {");
             body.println("                          alert(data.errorMessage)");
@@ -258,9 +269,13 @@ public class PageDefaultFolder extends Page {
             body.println("              xmlHttp.onreadystatechange = function() {");
             body.println("                  if (xmlHttp.readyState == 4 && xmlHttp.status == 200){");
             body.println("                      json = xmlHttp.responseText");
-            body.println("                      var n = json.search(/>{/i);");
-            body.println("                      json = json.substring(n+1)");
-            body.println("                      json = json.replace(\"</pre>\", \"\")");
+            body.println("                      if (json === \"\") {");
+            body.println("                          json = \"{}\";");
+            body.println("                      } else {");
+            body.println("                          var n = json.search(/>{/i);");
+            body.println("                          json = event.args.response.substring(n+1);");
+            body.println("                          json = json.replace(\"</pre>\", \"\");");
+            body.println("                      }");
             body.println("                      data = JSON.parse(json);");
             body.println("                      if (data.MessageType === \"Error\") {");
             body.println("                          alert(data.errorMessage)");
@@ -279,19 +294,19 @@ public class PageDefaultFolder extends Page {
             body.println("      </script>");
 
             body.println("  </head>");
-            body.println("<body>");            
+            body.println("<body>");
             body.println("<div id=\"page\" class=\"page-class\">");
-            
-            body.println("  <table id=\"cheetahTable\">");            
-            body.println("    <tr>");           
+
+            body.println("  <table id=\"cheetahTable\">");
+            body.println("    <tr>");
             body.println("      <td width=\"70%\">");
-            body.println("        <h1>&nbsp;&nbsp;&nbsp;Index of file: " + page + "</h1>");           
-            body.println("      </td>");         
+            body.println("        <h1>&nbsp;&nbsp;&nbsp;Index of file: " + page + "</h1>");
+            body.println("      </td>");
             body.println("      <td width=\"30%\" style=\"text-align: center;\">");
-            body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");  
-            body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>");           
-            body.println("      </td>");         
-            body.println("    </tr>");           
+            body.println("        <img src=\"/login/Logo\" height=\"60\"/><BR>");
+            body.println("        <a href =\"https://github.com/pschweitz/CheetahWebserver\" target=\"_blank\">" + this.webserver.serverName + "</a>");
+            body.println("      </td>");
+            body.println("    </tr>");
             body.println("  </table>");
             body.println("  <hr>");
 
@@ -311,25 +326,24 @@ public class PageDefaultFolder extends Page {
                         body.println("  <div id=\"eventsPanel\"></div>");
 
                     } else {
-                        body.println("  <form method=\"post\" action=\"/admin/Upload?Destination=" + page + "\" enctype=\"multipart/form-data\">");
-                        body.println("  <p>");
-                        body.println("  <input type=\"file\" name=\"file\" size=\"30\">");
+                        body.println("          <form method=\"post\" action=\"/admin/Upload?Destination=" + page + "\" enctype=\"multipart/form-data\">");
+                        body.println("            <input type=\"file\" name=\"file\" size=\"30\">");
 
                         String websocket = "";
                         if (this.webserver.isWebsocketEnabled()) {
-                            websocket = "onClick=\"websocket.close();\"";
+                            websocket = "onClick=\"websocketFolder.close();\"";
                         }
-
-                        body.println("  <input type=\"submit\" name=\"upload\" value=\"Uploader\" " + websocket + ">");
-                        body.println("  <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"" + this.webserver.getFileUploadLimit() + "\" />");
-                        body.println("  </p>");
-                        body.println("  </form>");
+                        body.println("      <BR>");
+                        body.println("      <BR>");
+                        body.println("            <input type=\"submit\" name=\"upload\" value=\"Upload\" " + websocket + ">");
+                        body.println("            <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"" + this.webserver.getFileUploadLimit() + "\" />");
+                        body.println("          </form>");
                     }
 
                     body.println("      </td>");
                 }
             }
-            
+
             body.println("      <td width=\"90%\" align=\"right\">");
             String user = this.webserver.getUsername(request);
             if (!user.equals("")) {
@@ -380,8 +394,8 @@ public class PageDefaultFolder extends Page {
         body.println("      <table id=\"folderContentTable\" class=\"table table-striped\">");
         body.println("          <thead>");
         body.println("            <tr>");
-        body.println("              <th width=\"50%\">Name</th>");
-        body.println("              <th width=\"25%\" >Last Modification Date</th>");
+        body.println("              <th width=\"47%\">Name</th>");
+        body.println("              <th width=\"28%\" >Last Modification Date</th>");
         body.println("              <th width=\"10%\">Size</th>");
         if (this.webserver.isFileFolderBrowsingReadWrite()) {
             body.println("              <th width=\"13%\">Action</th>");
@@ -476,6 +490,10 @@ public class PageDefaultFolder extends Page {
             body.print("                &nbsp; (dynamic content)");
             body.println("              </td>");
             body.println("              <td>");
+            if (this.webserver.isFileFolderBrowsingReadWrite()) {
+                body.println("              </td>");
+                body.println("              <td>");
+            }
         }
         body.println("\n              </td>");
         body.println("            </tr>");

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -102,6 +103,20 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
 
     private boolean closed = false;
 
+    public Charset findCharset(){
+        Charset result = null;
+        
+        result = Charset.forName(webserverContext.getString("WebserverOutputCharset"));
+        
+        if(result == null){
+            logger.warn("Charset not found for name: " + webserverContext.getString("WebserverOutputCharset"));
+            logger.warn("Using UTF-8 instaed");
+            result = Charset.forName("UTF-8");
+        }
+        
+        return result;
+    }
+    
     @Override
     public void handle(Request request, Response response) {
         logger.trace("handle Request " + request.getClass().getName());  
@@ -111,7 +126,9 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         set charset if put inside the configuration file, aka not blank and existing..
         */
         
-        response.setContentType("text/html;charset=" + webserverContext.getString("WebserverOutputCharset"));
+        response.setContentType("text/html");
+        response.setCharset(findCharset());        
+        
         RequestResolver requestExecutor = new RequestResolver(this, request, response);
         requestExecutor.execute();
     }
@@ -253,7 +270,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
     private void init(String name) {
         webserverContext = new WebServerContext(this.configurationFile);
         webserverVirtualHosts = new WebServerVirtualHosts("etc/virtualhosts.properties");
-        sessionDirectory = new SessionDirectory();
+        sessionDirectory = new SessionDirectory(this);
         ipAttempt = new ConcurrentHashMap();
         websocketServiceList = new ConcurrentHashMap();
         webserverName = name;
