@@ -102,6 +102,8 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
     private TreeMap<String, Boolean> authorizationFolder;
 
     private boolean closed = false;
+    
+    private boolean printURLResolvingTraces = false;
 
     public Charset findCharset(){
         Charset result = null;
@@ -1284,7 +1286,16 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         getControler().setStopTimeout(l);
     }
 
+    @Override
     public ContainerController getControler() {
         return this.processor.getControler();
     }
+
+    public boolean isPrintURLResolvingTraces() {
+        return printURLResolvingTraces;
+    }
+
+    public void setPrintURLResolvingTraces(boolean printURLResolvingTraces) {
+        this.printURLResolvingTraces = printURLResolvingTraces;
+    }       
 }

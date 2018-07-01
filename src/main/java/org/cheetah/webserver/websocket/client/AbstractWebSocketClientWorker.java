@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import org.simpleframework.http.socket.Frame;
+import java.nio.ByteBuffer;
 import org.simpleframework.http.socket.FrameType;
+import static org.simpleframework.http.socket.FrameType.BINARY;
+import static org.simpleframework.http.socket.FrameType.TEXT;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -26,54 +28,49 @@ public abstract class AbstractWebSocketClientWorker<ResponseObject extends Seria
 
     public abstract void processObject(ResponseObject responseObject);
 
-    private Frame frame;
+    //private Frame frame;
     private String responseString;
     private ResponseObject responseObject;
-    
+
     protected WebSocketClient webSocketClient;
+    
+    private FrameType frameType;
 
-    public final void setFrame(Frame frame) {
-        this.frame = frame;
+    public final void setMessage(String stringMessage) {
+        frameType = FrameType.TEXT;
+        responseString = stringMessage;
+    }
 
-        switch (frame.getType()) {
+    public final void setMessage(ByteBuffer byteMessage) {
+        frameType = FrameType.BINARY;
+        ByteArrayInputStream bis = new ByteArrayInputStream(byteMessage.array());
+        ObjectInput in = null;
+        try {
+            in = new ObjectInputStream(bis);
 
-            case TEXT:
+            responseObject = (ResponseObject) in.readObject();
 
-                responseString = frame.getText();
-                break;
+        } catch (IOException | ClassNotFoundException ex) {
+            logger.error("Error reading frame response", ex);
 
-            case BINARY:
-
-                ByteArrayInputStream bis = new ByteArrayInputStream(frame.getBinary());
-                ObjectInput in = null;
-                try {
-                    in = new ObjectInputStream(bis);
-
-                    responseObject = (ResponseObject) in.readObject();
-
-                } catch (IOException | ClassNotFoundException ex) {
-                    logger.error("Error reading frame response", ex);
-
-                } finally {
-                    try {
-                        bis.close();
-                    } catch (IOException ex) {
-                    }
-                    try {
-                        if (in != null) {
-                            in.close();
-                        }
-                    } catch (IOException ex) {
-                    }
+        } finally {
+            try {
+                bis.close();
+            } catch (IOException ex) {
+            }
+            try {
+                if (in != null) {
+                    in.close();
                 }
-                break;
+            } catch (IOException ex) {
+            }
         }
     }
 
     @Override
     public final void run() {
 
-        switch (frame.getType()) {
+        switch (frameType) {
 
             case TEXT:
 
@@ -93,5 +90,5 @@ public abstract class AbstractWebSocketClientWorker<ResponseObject extends Seria
 
     public void setWebSocketClient(WebSocketClient webSocketClient) {
         this.webSocketClient = webSocketClient;
-    }   
+    }
 }

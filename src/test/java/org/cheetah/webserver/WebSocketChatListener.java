@@ -20,7 +20,7 @@ public class WebSocketChatListener extends WebSocketDefaultListener {
         String user = getUserName(session);
 
         FrameType type = frame.getType();
-        Frame replay = null;
+        Frame reply = null;
 
         if (type == FrameType.PONG || type == FrameType.CLOSE) {
             return;
@@ -34,17 +34,17 @@ public class WebSocketChatListener extends WebSocketDefaultListener {
                 String text = frame.getText();
 
                 text = user + "> " + text;
-                replay = new DataFrame(type, text);
+                reply = new DataFrame(type, text);
 
             } catch (Exception e) {
                 logger.error("Error creating text replay frame", e);
             }
 
-            if (replay != null) {
-                webSocketService.distribute(replay);
+            if (reply != null) {
+                webSocketService.distribute(reply);
                 webSocketService.getWebserver().distributeToWebsocketServiceFrame("org.cheetah.webserver.page.websocket.Chat2", session, frame);
             } else {
-                logger.error("Replay is null");
+                logger.error("Reply is null");
             }
 
             printRequest(session);

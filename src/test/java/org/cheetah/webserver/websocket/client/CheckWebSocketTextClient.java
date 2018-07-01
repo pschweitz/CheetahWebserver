@@ -39,15 +39,15 @@ public class CheckWebSocketTextClient<RequestObject extends Serializable, Respon
     }
 
     public CheckWebSocketTextClient(String name, String host, int port, String URI, boolean sslEnabled, int code, String result) {
-        this(name,host, port, "", "", URI, sslEnabled, false, code, result);
+        this(name, host, port, "", "", URI, sslEnabled, false, code, result);
     }
 
     public CheckWebSocketTextClient(String name, String host, int port, String URI, boolean sslEnabled, boolean sslEnforceValidation, int code, String result) {
-        this(name,host, port, "", "", URI, sslEnabled, sslEnforceValidation, code, result);
+        this(name, host, port, "", "", URI, sslEnabled, sslEnforceValidation, code, result);
     }
 
     public CheckWebSocketTextClient(String name, String host, int port, String username, String password, String URI, boolean sslEnabled, int code, String result) {
-        this(name,host, port, username, password, URI, sslEnabled, false, code, result);
+        this(name, host, port, username, password, URI, sslEnabled, false, code, result);
     }
 
     public CheckWebSocketTextClient(String name, String host, int port, String username, String password, String URI, boolean sslEnabled, boolean sslEnforceValidation, int code, String result) {
@@ -66,11 +66,14 @@ public class CheckWebSocketTextClient<RequestObject extends Serializable, Respon
     }
 
     protected void createConnection() {
-                
-        WebSocketClient webSocketClient = new WebSocketClient(host, port, username, password, URI, sslEnabled, sslEnforceValidation, new WebSocketClientWorkerTextTest());
-                              
+
+        WebSocketClient webSocketClient = new WebSocketClient(host, port, username, password, URI, sslEnabled, sslEnforceValidation, WebSocketClientWorkerTextTest.class);
+
         webSocketClient.sendString(result);
-                
-        webSocketClient.close();        
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ex) {
+        }
+        webSocketClient.close();
     }
 }

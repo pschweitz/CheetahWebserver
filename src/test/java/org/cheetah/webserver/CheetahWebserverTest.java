@@ -13,6 +13,7 @@ import org.cheetah.webserver.websocket.client.CheckWebSocketSynchronizedText;
 import org.cheetah.webserver.websocket.client.CheckWebSocketSynchronizedTextBadRequest;
 import org.cheetah.webserver.websocket.client.CheckWebSocketSynchronizedTextClient;
 import org.cheetah.webserver.websocket.client.CheckWebSocketTextClient;
+import org.simpleframework.http.core.Controller;
 
 public class CheetahWebserverTest {
 
@@ -65,6 +66,7 @@ public class CheetahWebserverTest {
         webserverContext.loadProperties();
 
         webserver = new CheetahWebserver(propertyFile);
+        webserver.setStopStrategy(Controller.STOP_STRATEGY.KILL);
 
         hostname = webserver.getNetworkInterface();
 
@@ -204,9 +206,9 @@ public class CheetahWebserverTest {
                  */
 
             } else {
-                new CheckWebSocketSynchronizedTextClient("11- CheckWebSocketSynchronizedTextClient", hostname, port, "/websocket/Chat", sslEnabled, 101, virtual + "test syncronized client text");
+                new CheckWebSocketSynchronizedTextClient("11- CheckWebSocketSynchronizedTextClient", hostname, port, "/websocket/Chat", sslEnabled, 101, virtual + "test synchronized client text");
 
-                new CheckWebSocketSynchronizedObjectClient("11- CheckWebSocketSynchronizedObjectClient", hostname, port, "/websocket/Chat", sslEnabled, 101, virtual + "test syncronized client object");
+                new CheckWebSocketSynchronizedObjectClient("11- CheckWebSocketSynchronizedObjectClient", hostname, port, "/websocket/Chat", sslEnabled, 101, virtual + "test synchronized client object");
                 new CheckWebSocketTextClient("11- CheckWebSocketTextClient", hostname, port, "/websocket/Chat", sslEnabled, 101, "test client text");
                 new CheckWebSocketObjectClient("11- CheckWebSocketObjectClient", hostname, port, "/websocket/Chat", sslEnabled, 101, "test client object");
 

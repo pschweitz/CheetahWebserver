@@ -56,7 +56,7 @@ public class Upload extends WebSocketUploadPage {
             destination = request.getValue("Destination");
         }
 
-        response.setStatus(Status.OK);
+        response.setStatus(Status.CREATED);
         /*
         if (referer == null) {
             // bad request...

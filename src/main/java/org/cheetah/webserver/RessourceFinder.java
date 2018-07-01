@@ -507,14 +507,15 @@ public class RessourceFinder {
 
                 packageName = packageName.replace('.', '/');
 
-                if (packageName.equals("")) {
+                if (packageName.equals("")) {                    
 
                     if (entryName != null && !entryName.endsWith(".class") && !entryName.contains("/")) {
 
                         try {
                             String packageEntryName = entryName.substring(packageName.length());
 
-                            FileInformation fileInformation = new FileInformation(packageEntryName, 4096l, entry.getLastModifiedTime().toMillis(), false, true, false);
+                            //FileInformation fileInformation = new FileInformation(packageEntryName, 4096l, entry.getLastModifiedTime().toMillis(), false, true, false);
+                            FileInformation fileInformation = new FileInformation(packageEntryName, entry.getSize(), entry.getLastModifiedTime().toMillis(), false, true, false);
                             if (!result.contains(fileInformation)) {
                                 result.add(fileInformation);
                             }
@@ -526,7 +527,9 @@ public class RessourceFinder {
                     try {
                         String packageEntryName = entryName.substring(packageName.length() + 1);
 
-                        FileInformation fileInformation = new FileInformation(packageEntryName, 4096l, entry.getLastModifiedTime().toMillis(), false, true, false);
+                        //FileInformation fileInformation = new FileInformation(packageEntryName, 4096l, entry.getLastModifiedTime().toMillis(), false, true, false);
+                        FileInformation fileInformation = new FileInformation(packageEntryName, entry.getSize(), entry.getLastModifiedTime().toMillis(), false, true, false);
+                        
                         if (!result.contains(fileInformation)) {
                             result.add(fileInformation);
                         }
@@ -545,6 +548,67 @@ public class RessourceFinder {
         }
 
         logger.trace(" END : getRessourcesInPackageFromJar(List, String, String)");
+    }
+    
+    
+    public static FileInformation getFileInformationFromRessourceURL(URL url) {
+        logger.trace("START: getFileInformationFromRessourceURL(URL)");
+        FileInformation result = new FileInformation("",0l,0l,false,false,false);
+
+        // jar:file:/users/JAVA_PROJECT/CheetahWebserver/CheetahWebserver/plugins/file-icons.zip!/ressources/file-icons/32px/folder-new.png
+                
+        String[] urlString = {url.toString()};
+        String fileName = "";
+        
+        if(url.toString().contains("!")){
+            urlString = url.toString().split("!");
+            fileName = urlString[1];
+        }
+        
+        if(urlString[0].startsWith("jar")){
+            urlString[0] = urlString[0].substring(4);
+        }
+        if(urlString[0].startsWith("file")){
+            urlString[0] = urlString[0].substring(5);
+        }
+        
+        if(fileName.startsWith("/")){
+            fileName = fileName.substring(1);
+        }
+                
+        JarFile jarFile = null;
+        try {
+            jarFile = new JarFile(urlString[0]);
+
+            Enumeration<JarEntry> en = jarFile.entries();
+            while (en.hasMoreElements()) {
+                JarEntry entry = en.nextElement();
+                String entryName = entry.getName();
+
+                entryName = entryName.replace('.', '/');
+                fileName = fileName.replace('.', '/');
+                
+                if (fileName.equals(entryName)) {    
+                    result = new FileInformation(fileName, entry.getSize(), entry.getLastModifiedTime().toMillis(), false, true, false);
+                    
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            
+            logger.error("Error reading jarfile '" + url.toString() +"' " + e.toString() );
+            
+        } finally {
+            try {
+                if (jarFile != null) {
+                    jarFile.close();
+                }
+            } catch (Exception e) {
+            }
+        }
+
+        logger.trace(" END : getFileInformationFromRessourceURL(URL)");
+        return result;
     }
 
     private static boolean fileRequireAuthentication(String fileRoot, String filePath, CheetahWebserver webserver) {

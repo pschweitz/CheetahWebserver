@@ -38,13 +38,13 @@ task wrapper(type: Wrapper) {
     gradleVersion = "3.5"
 }
 
-
+//"Main-Class": 'org.cheetah.webserver.CheetahWebserverTest'
 task packageTests(type: Jar) {
     baseName = 'CheetahWebserverTest'
     manifest {
         attributes(
         "Created-By": 'Philippe Schweitzer',
-        "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/') + ' lib/CheetahWebserver.jar',
+        "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/') + ' lib/CheetahWebserver-' + version + '.jar',
         "Main-Class": 'org.cheetah.webserver.CheetahWebserverTest'
         )
     }
@@ -64,8 +64,62 @@ jar {
 
 build {
     dependsOn packageTests
+    /*
+    def file = new File("$projectDir/lib/CheetahWebserver-" + version + '.jar')
+    
+    if(file.exists()){ 
+        delete "$projectDir/lib/CheetahWebserver-" + version + '.jar'
+    }    
+    */
 }
 
 test {
     dependsOn packageTests
+    /*    
+    print "RUN TEST\n"  
+    
+    
+    copy{      
+        from "$buildDir/libs/CheetahWebserver-" + version + '.jar'
+        into "$projectDir/lib"
+    }
+    
+    def jarname = "CheetahWebserverTest" + "-" + version + ".jar"
+    
+    def file = new File("$projectDir/" + jarname)
+    
+    if(file.exists()){
+        delete "$projectDir/" + jarname
+    }
+    
+    copy{      
+        from "$buildDir/libs/" + jarname
+        into "$projectDir/"
+    }
+            
+    //def file = new File("$projectDir/" + jarname)
+    
+    if(file.exists()){  
+        
+        
+      //  def sout = new StringBuilder(), serr = new StringBuilder()
+      //  def command = 'java -jar ' + jarname
+      //  def proc = command.execute()
+      //  proc.consumeProcessOutput(sout, serr)
+      //  proc.waitForOrKill(1000000)
+         
+        
+        javaexec { 
+            main="-jar";
+            args = [
+                jarname,
+                
+        ""
+            ]
+        }  
+    }
+    else{
+        print "jar executable: " + jarname + " does not exist \n" 
+    }
+    */
 }

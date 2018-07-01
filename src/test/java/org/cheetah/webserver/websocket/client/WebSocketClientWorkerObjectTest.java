@@ -30,12 +30,12 @@ public class WebSocketClientWorkerObjectTest extends AbstractWebSocketClientWork
         String responseString = (String) responseObject;
 
         if (responseString.startsWith(result)) {
-            System.out.println("Pass : " + "11- WebSocketClientWorkerObjectTest" + " URI: " + this.webSocketClient.URI + ": result: " + result);
+            System.out.println("Pass : " + "11- WebSocketClientWorkerObjectTest" + " URI: " + this.webSocketClient.getURI() + ": result: " + result);
         } else {
             if (responseString.length() >= result.length()) {
-                System.err.println("Fail : " + "11- WebSocketClientWorkerObjectTest" + " URI: " + this.webSocketClient.URI + ": result: " + result + " vs " + responseString.substring(0, result.length()));
+                System.err.println("Fail : " + "11- WebSocketClientWorkerObjectTest" + " URI: " + this.webSocketClient.getURI() + ": result: " + result + " vs " + responseString.substring(0, result.length()));
             } else {
-                System.err.println("Fail : " + "11- WebSocketClientWorkerObjectTest" + " URI: " + this.webSocketClient.URI + ": result: " + result);
+                System.err.println("Fail : " + "11- WebSocketClientWorkerObjectTest" + " URI: " + this.webSocketClient.getURI() + ": result: " + result);
             }
         }
     }

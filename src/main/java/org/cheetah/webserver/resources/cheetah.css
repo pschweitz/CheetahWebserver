@@ -107,7 +107,7 @@ a:active {
     display: inline-block;
 }
 
-input[type=submit], .button{
+input[type=submit], button{
     padding:5px 15px; 
     background:#d6cecc; 
     border:1px solid #d6cecc;
@@ -117,7 +117,7 @@ input[type=submit], .button{
     color: #000000;
 }
 
-input[type=submit]:hover, .button{
+input[type=submit]:hover, button:hover{
     padding:5px 15px; 
     background:#d6cecc; 
     border:1px solid #000000;

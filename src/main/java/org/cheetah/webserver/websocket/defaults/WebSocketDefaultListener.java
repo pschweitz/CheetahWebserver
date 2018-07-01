@@ -23,7 +23,7 @@ public class WebSocketDefaultListener implements FrameListener {
         String user = getUserName(session);
 
         FrameType type = frame.getType();
-        Frame replay = null;
+        Frame reply = null;
 
         if (type == FrameType.PONG || type == FrameType.CLOSE) {
             return;
@@ -31,10 +31,20 @@ public class WebSocketDefaultListener implements FrameListener {
 
         logger.debug("onFrame type: " + type + " from user: " + user);
 
+        if (type == FrameType.PING) {
+            try {
+
+                reply = new DataFrame(FrameType.PONG);
+
+            } catch (Exception e) {
+                logger.error("Error creating pong replay frame", e);
+            }
+        }
+        
         if (type == FrameType.TEXT) {
             try {
 
-                replay = new DataFrame(type, frame.getText());
+                reply = new DataFrame(type, frame.getText());
 
             } catch (Exception e) {
                 logger.error("Error creating text replay frame", e);
@@ -44,17 +54,17 @@ public class WebSocketDefaultListener implements FrameListener {
         if (type == FrameType.BINARY) {
             try {
 
-                replay = new DataFrame(type, frame.getBinary());
+                reply = new DataFrame(type, frame.getBinary());
 
             } catch (Exception e) {
                 logger.error("Error creating binary replay frame", e);
             }
         }
 
-        if (replay != null) {
-            webSocketService.distribute(replay);
+        if (reply != null) {
+            webSocketService.distribute(reply);
         } else {
-            logger.error("Replay is null");
+            logger.error("Reply is null");
         }
 
         printRequest(session);

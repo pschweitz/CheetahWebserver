@@ -12,27 +12,27 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
-import java.nio.channels.ClosedByInterruptException;
+import java.net.URI;
+import java.nio.ByteBuffer;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
-import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import org.simpleframework.http.socket.DataFrame;
-import org.simpleframework.http.socket.Frame;
-import org.simpleframework.http.socket.FrameType;
+import org.java_websocket.client.AbstractWebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -43,19 +43,27 @@ public class WebSocketClientSynchronized<RequestObject extends Serializable, Res
 
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(WebSocketClientSynchronized.class);
 
+    /*
     private Socket socket;
     private StreamCursor cursor;
     private FrameConsumer consumer;
-
-    public String host;
-    public int port;
-    public String username;
+     */
+    //private ThreadResponse threadResponse;
+    private String host;
+    private int port;
+    private String username;
     private String password;
-    public String URI;
-    public boolean sslEnabled;
-    public boolean sslEnforceValidation;
+    private String URI;
+    private boolean sslEnabled;
+    private boolean sslEnforceValidation;
+    private AbstractWebSocketClientWorker worker;
+    protected WebSocketClientImpl client;
+    protected WebSocketClientSynchronized instance;
 
-    private ConcurrentLinkedQueue<Long> cookieQueue = new ConcurrentLinkedQueue();
+    protected String responseResult;
+    protected Serializable responseObject;
+
+    private BlockingQueue<ResponseObject> responseQueue = new LinkedBlockingQueue();
 
     private WebSocketClientSynchronized() {
     }
@@ -80,69 +88,52 @@ public class WebSocketClientSynchronized<RequestObject extends Serializable, Res
         this.URI = URI;
         this.sslEnabled = sslEnabled;
         this.sslEnforceValidation = sslEnforceValidation;
-    }
 
-    protected void createConnection() {
-
-        String bytesEncoded = "";
-        String authorizationHeader = "";
+        HashMap<String, String> headers = new HashMap();
 
         if (!username.equals("")) {
-            bytesEncoded = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
-            authorizationHeader = "Authorization: BASIC " + bytesEncoded + "\r\n";
+            String bytesEncoded = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
+            headers.put("Authorization", "BASIC " + bytesEncoded);
         }
+
+        String protocol = "ws";
+        if (sslEnabled) {
+            protocol = "wss";
+        }
+        String uriString = protocol + "://" + host;
+
+        if (port != 80) {
+            uriString += ":" + port;
+        }
+        uriString += URI;
 
         try {
-            socket = getSocket(host, port, sslEnabled);
-            if (socket != null) {
-                cursor = new StreamCursor(socket.getInputStream());
-                consumer = new FrameConsumer();
-                ReplyConsumer response = new ReplyConsumer();
+            URI uri = new URI(uriString);
+            this.client = new WebSocketClientImpl(uri, headers);
+            this.client.setSocket(getSocket(host, port, sslEnabled));
+            this.client.connect();
 
-                byte[] random = new byte[16];
-                Random reuseableRandom = new Random();
-                reuseableRandom.nextBytes(random);
-                String secWebSocketKey = Base64.getEncoder().encodeToString(random);
-
-                String hostPort;
-
-                if (port != 80 && port != 443) {
-                    hostPort = host + ":" + port;
-                } else {
-                    hostPort = host;
+            long timeoutCount = 30;
+            long count = 0;
+            while (!this.client.isOpen() && count < timeoutCount) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
                 }
-
-                byte[] request = ("GET " + URI + " HTTP/1.1\r\n"
-                        + "Host: " + hostPort + "\r\n"
-                        + authorizationHeader
-                        + "Upgrade: websocket\r\n"
-                        + "Connection: keep-alive, Upgrade\r\n"
-                        + "Sec-WebSocket-Key: " + secWebSocketKey + "\r\n"
-                        + "Sec-WebSocket-Version: 13\r\n"
-                        + "\r\n").getBytes("ISO-8859-1");
-
-                socket.getOutputStream().write(request);
-
-                while (cursor.isOpen()) {
-                    response.consume(cursor);
-
-                    if (response.isFinished()) {
-                        logger.debug("response: \n " + response);
-                        break;
-                    }
-                }
-
-                logger.debug("response.getDescription() :" + response.getDescription());
-                logger.debug("response.getCode() :" + response.getCode());
+                count++;
             }
 
-        } catch (Exception e) {
-            logger.error("Error openning WebSocket", e);
+        } catch (Exception ex) {
+            logger.error("Error connexting to WebSocket: '" + uriString + "': " + ex.toString());
         }
-
+        instance = this;
     }
 
-    protected final Socket getSocket(String host, int port, boolean sslEnabled) throws Exception {
+    public boolean isOpen() {
+        return client.isOpen();
+    }
+
+    private final Socket getSocket(String host, int port, boolean sslEnabled) throws Exception {
 
         if (!sslEnabled) {
             return new Socket(host, port);
@@ -194,80 +185,8 @@ public class WebSocketClientSynchronized<RequestObject extends Serializable, Res
         return responseSocket;
     }
 
-    public long lock() {
-        logger.trace("START lock()");
-
-        Long lockCookie = new Random().nextLong();
-        cookieQueue.add(lockCookie);
-
-        if (cookieQueue.peek() != null) {
-
-            if (!lockCookie.equals(cookieQueue.peek())) {
-                logger.trace("Thread " + lockCookie + "           wait");
-
-                synchronized (lockCookie) {
-                    try {
-                        lockCookie.wait();
-                    } catch (InterruptedException e) {
-
-                        // Remove of the lockCookie inside the queue if waiting Thread is interrupted.
-                        // Otherwise there will be zombie Thread attempts remaining in queue which will 
-                        // never unlock access for new comming Threads.
-                        cookieQueue.remove(lockCookie);
-                        logger.error("Thread " + lockCookie + "           interrupted while waiting for lockCookie", e);
-                    }
-                }
-            } else {
-                logger.trace("Thread " + lockCookie + "      gets lock");
-            }
-        }
-
-        logger.trace("END lock()");
-        return lockCookie;
-    }
-
-    public void unlock(long lockCookie) {
-        logger.trace("START unlock(long)");
-
-        logger.trace("Thread " + lockCookie + " releases lock");
-        cookieQueue.poll();
-
-        Long lockCookieQueued = cookieQueue.peek();
-
-        if (lockCookieQueued != null) {
-
-            synchronized (lockCookieQueued) {
-
-                logger.trace("Thread " + lockCookieQueued + " gets lock");
-                lockCookieQueued.notify();
-            }
-        }
-
-        logger.trace("END unlock(long)");
-    }
-
-    private void send(Frame frame) {
-
-        Long lockCookie = lock();
-
-        logger.debug("Send: " + frame.getType().name());
-
-        try {
-            if (socket != null) {
-                OutputStream stream = socket.getOutputStream();
-
-                // make synchronization
-                //    synchronized (stream) {
-                FrameEncoder frameEncoder = new FrameEncoder(stream);
-                frameEncoder.encode(frame);
-                stream.flush();
-                //    }
-            }
-
-        } catch (IOException ex) {
-            logger.error("Error sending frame", ex);
-        }
-        unlock(lockCookie);
+    public String getURI() {
+        return URI;
     }
 
     public synchronized String synchronizedSendString(String request) {
@@ -278,51 +197,34 @@ public class WebSocketClientSynchronized<RequestObject extends Serializable, Res
             result = synchronizedSendString(request, 0);
 
         } catch (TimeoutException ex) {
-            logger.error("Error reading frame response", ex);
+            logger.error("Error reading response String: " + ex.toString());
         }
 
         return result;
     }
 
     public synchronized String synchronizedSendString(String request, long timeout) throws TimeoutException {
-        createConnection();
-        String response = null;
+        String result = null;
 
-        if (cursor != null) {
-            Frame frame;
+        client.send(request);
 
-            ThreadResponseString t = new ThreadResponseString();
-            t.start();
-
+        if (timeout > 0) {
             try {
-
-                while (!t.firstPING) {
-                    Thread.sleep(1);
-                }
-
-                frame = new DataFrame(FrameType.TEXT, request);
-                send(frame);
-
-                if (timeout > 0) {
-                    t.join(timeout);
-                } else {
-                    t.join();
-                }
-
-                if (t.response == null) {
-                    t.interrupt();
-                    throw new TimeoutException();
-                }
-
-                response = t.response;
-
+                result = (String) responseQueue.poll(timeout, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ex) {
-                logger.error("Error reading frame response", ex);
             }
-            close();
+            if (result == null) {
+                throw new TimeoutException();
+            }
+
+        } else {
+            try {
+                result = (String) responseQueue.take();
+            } catch (InterruptedException ex) {
+            }
         }
 
-        return response;
+        return result;
     }
 
     public synchronized ResponseObject synchronizedSendObject(RequestObject request) {
@@ -333,250 +235,125 @@ public class WebSocketClientSynchronized<RequestObject extends Serializable, Res
             result = synchronizedSendObject(request, 0);
 
         } catch (TimeoutException ex) {
-            logger.error("Error reading frame response", ex);
+            logger.error("Error reading response Object", ex);
         }
 
         return result;
     }
 
     public synchronized ResponseObject synchronizedSendObject(RequestObject request, long timeout) throws TimeoutException {
-        createConnection();
-        ResponseObject response = null;
+        ResponseObject result = null;
 
-        if (cursor != null) {
-            Frame frame;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutput out = null;
+        byte[] byteArray;
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutput out = null;
-            byte[] byteArray;
+        try {
+            out = new ObjectOutputStream(bos);
+            out.writeObject(request);
+            byteArray = bos.toByteArray();
 
-            try {
-                out = new ObjectOutputStream(bos);
-                out.writeObject(request);
-                byteArray = bos.toByteArray();
+            client.send(byteArray);
 
-                ThreadResponseObject t = new ThreadResponseObject();
-
-                t.start();
-
-                while (!t.firstPING) {
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException ex) {
-                    }
-                }
-
-                frame = new DataFrame(FrameType.BINARY, byteArray);
-                send(frame);
+            if (timeout > 0) {
                 try {
-
-                    if (timeout > 0) {
-                        t.join(timeout);
-                    } else {
-                        t.join();
-                    }
-
-                    if (t.response == null) {
-                        t.interrupt();
-                        throw new TimeoutException();
-                    }
-
-                    response = t.response;
-
+                    result = responseQueue.poll(timeout, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException ex) {
-                    logger.error("Error reading frame response", ex);
+                }
+                if (result == null) {
+                    throw new TimeoutException();
                 }
 
-                close();
+            } else {
+                try {
+                    result = responseQueue.take();
+                } catch (InterruptedException ex) {
+                }
+            }
 
+        } catch (IOException ex) {
+            logger.error("Error sending Object: " + ex.toString());
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
             } catch (IOException ex) {
-                logger.error("Error sending frame", ex);
-            } finally {
-                try {
-                    if (out != null) {
-                        out.close();
-                    }
-                } catch (IOException ex) {
-                }
-                try {
-                    bos.close();
-                } catch (IOException ex) {
-                }
+            }
+            try {
+                bos.close();
+            } catch (IOException ex) {
             }
         }
-        return response;
+
+        return result;
     }
 
-    protected class ThreadResponseString extends Thread {
-
-        protected String response = null;
-        public boolean firstPING = false;
-
-        public ThreadResponseString() {
-            //  this.response = response;
-        }
-
-        @Override
-        public void run() {
-            if (cursor != null) {
-                try {
-                    if (cursor.isOpen()) {
-
-                        while (true) {
-                            consumer.consume(cursor);
-
-                            if (consumer.isFinished()) {
-                                Frame frameResponse = consumer.getFrame();
-
-                                if (frameResponse != null) {
-
-                                    FrameType type = frameResponse.getType();
-
-                                    if (type == FrameType.CLOSE) {
-                                        break;
-                                    }
-
-                                    logger.debug("Got Frame Type: " + type.name());
-
-                                    if (type == FrameType.PING) {
-
-                                        Frame frame = new DataFrame(FrameType.PONG);
-                                        send(frame);
-                                        firstPING = true;
-                                    }
-
-                                    if (type == FrameType.TEXT) {
-                                        this.response = frameResponse.getText();
-
-                                        if (response != null) {
-                                            break;
-                                        }
-                                    }
-
-                                    if (type == FrameType.BINARY) {
-                                        logger.debug("Waiting for TEXT Frame but got BINARY instead");
-                                    }
-
-                                } else {
-                                    logger.debug("Frame null");
-                                }
-                                consumer.clear();
-                            }
-                        }
-                    }
-                } catch (ClosedByInterruptException e) {
-                    //logger.error("Timeout error reading WebSocket, Thread interrupted");
-                } catch (Exception e) {
-                    logger.error("Error reading WebSocket", e);
-                }
-            }
-        }
-    }
-
-    protected class ThreadResponseObject extends Thread {
-
-        protected ResponseObject response = null;
-        public boolean firstPING = false;
-
-        public ThreadResponseObject() {
-            //this.response = response;
-        }
-
-        @Override
-        public void run() {
-            if (cursor != null) {
-                try {
-                    if (cursor.isOpen()) {
-
-                        while (true) {
-                            consumer.consume(cursor);
-
-                            if (consumer.isFinished()) {
-                                Frame frameResponse = consumer.getFrame();
-
-                                if (frameResponse != null) {
-
-                                    FrameType type = frameResponse.getType();
-
-                                    logger.debug("Got Frame Type: " + type.name());
-
-                                    if (type == FrameType.CLOSE) {
-                                        break;
-                                    }
-
-                                    if (type == FrameType.PING) {
-
-                                        Frame frame = new DataFrame(FrameType.PONG);
-                                        send(frame);
-                                        firstPING = true;
-                                    }
-
-                                    if (type == FrameType.TEXT) {
-                                        String text = frameResponse.getText();
-
-                                        logger.debug("Waiting for BINARY Frame but got TEXT instead: " + text);
-                                    }
-
-                                    if (type == FrameType.BINARY) {
-
-                                        ByteArrayInputStream bis = new ByteArrayInputStream(frameResponse.getBinary());
-                                        ObjectInput in = null;
-                                        try {
-                                            in = new ObjectInputStream(bis);
-                                            this.response = (ResponseObject) in.readObject();
-
-                                            if (this.response != null) {
-                                                break;
-                                            }
-
-                                        } catch (IOException | ClassNotFoundException ex) {
-                                            logger.error("Error reading frame response", ex);
-
-                                        } finally {
-                                            try {
-                                                bis.close();
-                                            } catch (IOException ex) {
-                                            }
-                                            try {
-                                                if (in != null) {
-                                                    in.close();
-                                                }
-                                            } catch (IOException ex) {
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    logger.debug("Frame null");
-                                }
-                                consumer.clear();
-                            }
-                        }
-                    }
-                } catch (ClosedByInterruptException e) {
-                    //logger.error("Timeout error reading WebSocket, Thread interrupted");
-                } catch (Exception e) {
-                    logger.error("Error reading WebSocket", e);
-                }
-            }
-        }
-    }
-
-    protected void close() {
+    public void close() {
 
         logger.debug("Explicit websocket close");
+        client.close();
 
-        Frame frame = new DataFrame(FrameType.CLOSE);
-        send(frame);
+    }
 
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException ex) {
+    private class WebSocketClientImpl extends AbstractWebSocketClient {
+
+        public WebSocketClientImpl(URI serverURI, Map headers) {
+            super(serverURI, headers);
         }
 
-        try {
-            socket.close();
-        } catch (Exception e) {
-            logger.error("Error closing WebSocket", e);
+        @Override
+        public void onOpen(ServerHandshake handshakedata) {
+            logger.debug("onOpen WebSocketClientImpl");
+            // if you plan to refuse connection based on ip or httpfields overload: onWebsocketHandshakeReceivedAsClient
+        }
+
+        @Override
+        public void onMessage(String message) {
+            logger.debug("onMessage String: " + message);
+
+            responseQueue.add((ResponseObject) message);
+
+        }
+
+        @Override
+        public void onMessage(ByteBuffer blob) {
+            logger.debug("onMessage ByteBuffer");
+
+            ByteArrayInputStream bis = new ByteArrayInputStream(blob.array());
+            ObjectInput in = null;
+            try {
+                in = new ObjectInputStream(bis);
+                responseQueue.add((ResponseObject) in.readObject());
+
+            } catch (IOException | ClassNotFoundException ex) {
+                logger.error("Error reading frame response", ex);
+
+            } finally {
+                try {
+                    bis.close();
+                } catch (IOException ex) {
+                }
+                try {
+                    if (in != null) {
+                        in.close();
+                    }
+                } catch (IOException ex) {
+                }
+            }
+        }
+
+        @Override
+        public void onClose(int code, String reason, boolean remote) {
+            // The codecodes are documented in class org.java_websocket.framing.CloseFrame            
+            logger.debug("onClose Connection closed by " + (remote ? "remote peer" : "us") + " Code: " + code + " Reason: " + reason);
+        }
+
+        @Override
+        public void onError(Exception ex) {
+            logger.debug("onError WebSocketClientImpl: " + ex.toString());
+            ex.printStackTrace();
+            // if the error is fatal then onClose will be called additionally
         }
     }
 }

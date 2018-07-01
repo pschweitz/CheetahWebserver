@@ -9,24 +9,23 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
-import java.nio.channels.ClosedByInterruptException;
+import java.net.URI;
+import java.nio.ByteBuffer;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
-import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.HashMap;
+import java.util.Map;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import org.simpleframework.http.socket.DataFrame;
-import org.simpleframework.http.socket.Frame;
-import org.simpleframework.http.socket.FrameType;
+import org.java_websocket.client.AbstractWebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -37,38 +36,44 @@ public class WebSocketClient<WebSocketClientWorkerImpl extends AbstractWebSocket
 
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(WebSocketClient.class);
 
+    /*
     private Socket socket;
     private StreamCursor cursor;
     private FrameConsumer consumer;
-
-    private ThreadResponse threadResponse;
-
-    public String host;
-    public int port;
-    public String username;
+     */
+    //private ThreadResponse threadResponse;
+    private String host;
+    private int port;
+    private String username;
     private String password;
-    public String URI;
-    public boolean sslEnabled;
-    public boolean sslEnforceValidation;
-
-    private ConcurrentLinkedQueue<Long> cookieQueue = new ConcurrentLinkedQueue();
+    private String URI;
+    private boolean sslEnabled;
+    private boolean sslEnforceValidation;
+    private AbstractWebSocketClientWorker worker;
+    protected WebSocketClientImpl client;
+    protected WebSocketClient instance;
+    
+    protected String responseResult;
+    protected Serializable responseObject;
+    
+    private Class<? extends AbstractWebSocketClientWorker> webSocketClientWorker = null;
 
     private WebSocketClient() {
     }
 
-    public WebSocketClient(String host, int port, String URI, boolean sslEnabled, WebSocketClientWorkerImpl webSocketClientWorker) {
+    public WebSocketClient(String host, int port, String URI, boolean sslEnabled, Class<? extends AbstractWebSocketClientWorker> webSocketClientWorker) {
         this(host, port, "", "", URI, sslEnabled, false, webSocketClientWorker);
     }
 
-    public WebSocketClient(String host, int port, String URI, boolean sslEnabled, boolean sslEnforceValidation, WebSocketClientWorkerImpl webSocketClientWorker) {
+    public WebSocketClient(String host, int port, String URI, boolean sslEnabled, boolean sslEnforceValidation, Class<? extends AbstractWebSocketClientWorker> webSocketClientWorker) {
         this(host, port, "", "", URI, sslEnabled, sslEnforceValidation, webSocketClientWorker);
     }
 
-    public WebSocketClient(String host, int port, String username, String password, String URI, boolean sslEnabled, WebSocketClientWorkerImpl webSocketClientWorker) {
+    public WebSocketClient(String host, int port, String username, String password, String URI, boolean sslEnabled, Class<? extends AbstractWebSocketClientWorker> webSocketClientWorker) {
         this(host, port, username, password, URI, sslEnabled, false, webSocketClientWorker);
     }
 
-    public WebSocketClient(String host, int port, String username, String password, String URI, boolean sslEnabled, boolean sslEnforceValidation, WebSocketClientWorkerImpl webSocketClientWorker) {
+    public WebSocketClient(String host, int port, String username, String password, String URI, boolean sslEnabled, boolean sslEnforceValidation, Class<? extends AbstractWebSocketClientWorker> webSocketClientWorker) {
         this.host = host;
         this.port = port;
         this.username = username;
@@ -76,65 +81,50 @@ public class WebSocketClient<WebSocketClientWorkerImpl extends AbstractWebSocket
         this.URI = URI;
         this.sslEnabled = sslEnabled;
         this.sslEnforceValidation = sslEnforceValidation;
+        this.webSocketClientWorker = webSocketClientWorker;
 
-        String bytesEncoded = "";
-        String authorizationHeader = "";
+        HashMap<String, String> headers = new HashMap();
 
         if (!username.equals("")) {
-            bytesEncoded = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
-            authorizationHeader = "Authorization: BASIC " + bytesEncoded + "\r\n";
+            String bytesEncoded = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
+            headers.put("Authorization", "BASIC " + bytesEncoded);
         }
+
+        String protocol = "ws";
+        if (sslEnabled) {
+            protocol = "wss";
+        }
+        String uriString = protocol + "://" + host;
+
+        if (port != 80) {
+            uriString += ":" + port;
+        }
+        uriString += URI;
 
         try {
-            socket = getSocket(host, port, sslEnabled);
-            if (socket != null) {
-                cursor = new StreamCursor(socket.getInputStream());
-                consumer = new FrameConsumer();
-                ReplyConsumer response = new ReplyConsumer();
+            URI uri = new URI(uriString);
+            this.client = new WebSocketClientImpl(uri, headers);
+            this.client.setSocket(getSocket(host, port, sslEnabled));
+            this.client.connect();
 
-                byte[] random = new byte[16];
-                Random reuseableRandom = new Random();
-                reuseableRandom.nextBytes(random);
-                String secWebSocketKey = Base64.getEncoder().encodeToString(random);
-
-                String hostPort;
-
-                if (port != 80 && port != 443) {
-                    hostPort = host + ":" + port;
-                } else {
-                    hostPort = host;
+            long timeoutCount = 30;
+            long count = 0;
+            while (!this.client.isOpen() && count < timeoutCount) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
                 }
-
-                byte[] request = ("GET " + URI + " HTTP/1.1\r\n"
-                        + "Host: " + hostPort + "\r\n"
-                        + authorizationHeader
-                        + "Upgrade: websocket\r\n"
-                        + "Connection: keep-alive, Upgrade\r\n"
-                        + "Sec-WebSocket-Key: " + secWebSocketKey + "\r\n"
-                        + "Sec-WebSocket-Version: 13\r\n"
-                        + "\r\n").getBytes("ISO-8859-1");
-
-                socket.getOutputStream().write(request);
-
-                while (cursor.isOpen()) {
-                    response.consume(cursor);
-
-                    if (response.isFinished()) {
-                        logger.debug("response: \n " + response);
-                        break;
-                    }
-                }
-
-                logger.debug("response.getDescription() :" + response.getDescription());
-                logger.debug("response.getCode() :" + response.getCode());
+                count++;
             }
 
-        } catch (Exception e) {
-            logger.error("Error openning WebSocket", e);
+        } catch (Exception ex) {
+            logger.error("Error connexting to WebSocket: '" + uriString + "': " + ex.toString());
         }
+        instance = this;
+    }
 
-        threadResponse = new ThreadResponse(webSocketClientWorker, this);
-        threadResponse.start();
+    public boolean isOpen() {
+        return client.isOpen();
     }
 
     private final Socket getSocket(String host, int port, boolean sslEnabled) throws Exception {
@@ -189,99 +179,17 @@ public class WebSocketClient<WebSocketClientWorkerImpl extends AbstractWebSocket
         return responseSocket;
     }
 
-    public long lock() {
-        logger.trace("START lock()");
-
-        Long lockCookie = new Random().nextLong();
-        cookieQueue.add(lockCookie);
-
-        if (cookieQueue.peek() != null) {
-
-            if (!lockCookie.equals(cookieQueue.peek())) {
-                logger.trace("Thread " + lockCookie + "           wait");
-
-                synchronized (lockCookie) {
-                    try {
-                        lockCookie.wait();
-                    } catch (InterruptedException e) {
-
-                        // Remove of the lockCookie inside the queue if waiting Thread is interrupted.
-                        // Otherwise there will be zombie Thread attempts remaining in queue which will 
-                        // never unlock access for new comming Threads.
-                        cookieQueue.remove(lockCookie);
-                        logger.error("Thread " + lockCookie + "           interrupted while waiting for lockCookie", e);
-                    }
-                }
-            } else {
-                logger.trace("Thread " + lockCookie + "      gets lock");
-            }
-        }
-
-        logger.trace("END lock()");
-        return lockCookie;
+    public String getURI() {
+        return URI;
     }
-
-    public void unlock(long lockCookie) {
-        logger.trace("START unlock(long)");
-
-        logger.trace("Thread " + lockCookie + " releases lock");
-        cookieQueue.poll();
-
-        Long lockCookieQueued = cookieQueue.peek();
-
-        if (lockCookieQueued != null) {
-
-            synchronized (lockCookieQueued) {
-
-                logger.trace("Thread " + lockCookieQueued + " gets lock");
-                lockCookieQueued.notify();
-            }
-        }
-
-        logger.trace("END unlock(long)");
-    }
-
-    private synchronized void send(Frame frame) {
-
-        Long lockCookie = lock();
-        
-        try {
-            if (socket != null) {
-
-                /*
-                while (!threadResponse.firstPING) {
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException ex) {
-                    }
-                }
-*/
-
-                OutputStream stream = socket.getOutputStream();
-
-                FrameEncoder frameEncoder = new FrameEncoder(stream);
-                frameEncoder.encode(frame);
-                stream.flush();
-            }
-
-        } catch (IOException ex) {
-            logger.error("Error sending frame", ex);
-        }
-        unlock(lockCookie);
-    }
-
+    
+    
     public void sendString(String request) {
 
-        Frame frame;
-
-        frame = new DataFrame(FrameType.TEXT, request);
-        send(frame);
-
+        client.send(request);
     }
 
     public void sendObject(Serializable request) {
-
-        Frame frame;
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = null;
@@ -292,11 +200,10 @@ public class WebSocketClient<WebSocketClientWorkerImpl extends AbstractWebSocket
             out.writeObject(request);
             byteArray = bos.toByteArray();
 
-            frame = new DataFrame(FrameType.BINARY, byteArray);
-            send(frame);
+            client.send(byteArray);
 
         } catch (IOException ex) {
-            logger.error("Error sending frame", ex);
+            logger.error("Error sending Object: " + ex.toString());
         } finally {
             try {
                 if (out != null) {
@@ -311,91 +218,68 @@ public class WebSocketClient<WebSocketClientWorkerImpl extends AbstractWebSocket
         }
     }
 
-    protected class ThreadResponse extends Thread {
-
-        private WebSocketClientWorkerImpl webSocketClientWorker = null;
-        private WebSocketClient webSocketClient;
-        //public boolean firstPING = false;
-
-        public ThreadResponse(WebSocketClientWorkerImpl webSocketClientWorker, WebSocketClient webSocketClient) {
-            this.webSocketClientWorker = webSocketClientWorker;
-            this.webSocketClient = webSocketClient;
-        }
-
-        @Override
-        public void run() {
-
-            if (cursor != null) {
-
-                try {
-                    if (cursor.isOpen()) {
-
-                        while (true) {
-                            consumer.consume(cursor);
-
-                            if (consumer.isFinished()) {
-                                Frame frameResponse = consumer.getFrame();
-
-                                if (frameResponse != null) {
-
-                                    FrameType type = frameResponse.getType();
-
-                                    logger.debug("Frame Type: " + type.name());
-
-                                    if (type == FrameType.CLOSE) {
-                                        break;
-                                    }
-
-                                    if (type == FrameType.PING) {
-
-                                        Frame frame = new DataFrame(FrameType.PONG);
-                                      //  firstPING = true;
-                                        send(frame);
-                                    }
-
-                                    if (type == FrameType.TEXT || type == FrameType.BINARY) {
-
-                                        AbstractWebSocketClientWorker webSocketClientWorker = (WebSocketClientWorkerImpl) this.webSocketClientWorker.getClass().newInstance();
-                                        webSocketClientWorker.setFrame(frameResponse);
-                                        webSocketClientWorker.setWebSocketClient(webSocketClient);
-
-                                        Thread t = new Thread(webSocketClientWorker, webSocketClientWorker.getClass().getSimpleName());
-                                        t.start();
-                                    }
-
-                                } else {
-                                    logger.debug("Frame null");
-                                }
-                                consumer.clear();
-                            }
-                        }
-                    }
-                } catch (ClosedByInterruptException e) {
-                    //logger.error("Timeout error reading WebSocket, Thread interrupted");
-                } catch (Exception e) {
-                    logger.error("Error reading WebSocket", e);
-                }
-            }
-        }
-    }
-
     public void close() {
 
         logger.debug("Explicit websocket close");
+        client.close();
 
-        Frame frame = new DataFrame(FrameType.CLOSE);
-        send(frame);
+    }
 
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ex) {
+    private class WebSocketClientImpl extends AbstractWebSocketClient {
+
+        public WebSocketClientImpl(URI serverURI, Map headers) {
+            super(serverURI, headers);
         }
 
-        try {
-            threadResponse.interrupt();
-            socket.close();
-        } catch (Exception e) {
-            logger.error("Error closing WebSocket", e);
+        @Override
+        public void onOpen(ServerHandshake handshakedata) {
+            logger.debug("onOpen WebSocketClientImpl");
+            // if you plan to refuse connection based on ip or httpfields overload: onWebsocketHandshakeReceivedAsClient
+        }
+
+        @Override
+        public void onMessage(String message) {
+            logger.debug("onMessage String: " + message);
+            
+            try {
+                worker = webSocketClientWorker.newInstance();
+                worker.setMessage(message);
+                worker.setWebSocketClient(instance);
+                Thread t = new Thread(worker, webSocketClientWorker.getSimpleName());
+                t.start();
+            } catch (Exception ex) {
+                logger.error("Error processing Websocker incomming String message: " + ex.toString());
+            }
+
+        }
+
+        @Override
+        public void onMessage(ByteBuffer blob) {
+            logger.debug("onMessage ByteBuffer");
+
+            AbstractWebSocketClientWorker worker;
+            try {
+                worker = webSocketClientWorker.newInstance();
+                worker.setMessage(blob);
+                worker.setWebSocketClient(instance);
+                Thread t = new Thread(worker, webSocketClientWorker.getSimpleName());
+                t.start();
+            } catch (Exception ex) {
+                logger.error("Error processing Websocker incomming Byte message: " + ex.toString());
+            }
+        }
+
+        @Override
+        public void onClose(int code, String reason, boolean remote) {
+            // The codecodes are documented in class org.java_websocket.framing.CloseFrame            
+            logger.debug("onClose Connection closed by " + (remote ? "remote peer" : "us") + " Code: " + code + " Reason: " + reason);
+        }
+
+        @Override
+        public void onError(Exception ex) {
+            logger.debug("onError WebSocketClientImpl: " + ex.toString());
+            ex.printStackTrace();
+            // if the error is fatal then onClose will be called additionally
         }
     }
 }

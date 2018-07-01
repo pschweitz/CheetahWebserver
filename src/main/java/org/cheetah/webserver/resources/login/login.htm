@@ -9,6 +9,15 @@
 
         <script type="text/javascript">
 
+            function goback() {
+                var referer = document.referrer;
+                if (referer === '') {
+                    location.reload();
+                } else {
+                    window.location = referer;
+                }
+
+            }
             function login() {
 
                 username = document.forms["loginForm"].elements["username"].value;
@@ -77,22 +86,23 @@
             </table>
             <hr>
             <div align="center" style="min-height: 300px;">
-            <form name="loginForm" action="javascript:login();">
-                <BR>
-                <h3>Username: 
-                    <input type="text" name="username"/>
-                </h3>
-                <h3>
-                    Password:
-                    <input type="password" name="password"/>
-                </h3>
-                <div id="message"><pre style="color:red;font-size:1.6em;"></pre></div>
-                <h3>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <input type="submit" value="Login"/>
-                </h3>
-            </form>
+                <form name="loginForm" action="javascript:login();">
+                    <BR>
+                    <h3>Username: 
+                        <input type="text" name="username"/>
+                    </h3>
+                    <h3>
+                        Password:
+                        <input type="password" name="password"/>
+                    </h3>
+                    <div id="message"><pre style="color:red;font-size:1.6em;"></pre></div>
+                    <h3>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <button onclick="goback()">Cancel</button>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <input type="submit" value="Login"/>
+                    </h3>
+                </form>
             </div>
         </div>
 

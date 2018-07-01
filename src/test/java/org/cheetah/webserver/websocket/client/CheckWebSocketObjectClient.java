@@ -67,10 +67,13 @@ public class CheckWebSocketObjectClient<RequestObject extends Serializable, Resp
 
     protected void createConnection() {
                 
-        WebSocketClient webSocketClient = new WebSocketClient(host, port, username, password, URI, sslEnabled, sslEnforceValidation, new WebSocketClientWorkerObjectTest());          
+        WebSocketClient webSocketClient = new WebSocketClient(host, port, username, password, URI, sslEnabled, sslEnforceValidation, WebSocketClientWorkerObjectTest.class);          
                 
-        webSocketClient.sendObject(result);
-        
+        webSocketClient.sendObject(result);        
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ex) {
+        }
         webSocketClient.close();        
     }
 }
