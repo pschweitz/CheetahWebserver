@@ -6,7 +6,6 @@
 package org.cheetah.webserver;
 
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import org.simpleframework.http.Request;
@@ -116,14 +115,10 @@ public class PageDefaultFolder extends Page {
                 if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && this.isUserUploadGranted(request)) {
                     if (this.webserver.isFileUploadEnabled()) {
                         body.println("              $('#jqxFileUpload').jqxFileUpload({ width: 300, uploadUrl: '/admin/Upload?NoProgressBar=false&Destination=" + page + "', fileInputName: 'file' });");
-                        //        body.println("              $('#jqxProgressBar').jqxProgressBar({animationDuration: 0, showText: true, renderText: renderText, template: 'info', width: 250, height: 30, value: 0});");
-                        //        body.println("              $('#jqxProgressBar').hide();");
+                        
                         if (this.webserver.isWebsocketEnabled()) {
 
                             body.println("              var renderText = function(text, value) {");
-                            //                  if (value < 55) {
-                            //                      return "<span style='color: #333;'>" + text + "</span>";
-                            //                  }
                             body.println("                  return \"<span style='color: #fff;'>\" + text + \"</span>\";");
                             body.println("              };");
                             body.println("              $('#jqxFileUpload').on('uploadStart', function (event) {");
@@ -132,16 +127,10 @@ public class PageDefaultFolder extends Page {
                             body.println("                  json = event.args.response;");
 
                             body.println("                  console.log(event.args)");
-                            body.println("                  console.log(json)");
-                            //            body.println("                  $('#jqxProgressBar').show();");                    
-                            //            body.println("                  openUploadWebsocket();");
                             body.println("              });");
                         }
 
                         body.println("              $('#jqxFileUpload').on('uploadEnd', function (event) {");
-
-                        //        body.println("                  $('#jqxProgressBar').hide();");
-                        //        body.println("                  closeUploadWebsocket();");
                         body.println("                  console.log(event);");
 
                         if (!this.webserver.isWebsocketEnabled()) {
@@ -290,6 +279,36 @@ public class PageDefaultFolder extends Page {
             body.println("                  xmlHttp.open(\"GET\", \"/admin/DeleteFile?fileName=\" + fileName, true); // true for asynchronous");
             body.println("                  xmlHttp.send(null);");
             body.println("              }");
+            body.println("          }");          
+            
+            
+            body.println("          function uploadFile(destination, formData) {");
+            body.println("              const req = new XMLHttpRequest();");
+            body.println("              let url = '/admin/Upload?Destination=' + destination;");
+            body.println("              websocketFolder.close();");
+            
+            
+
+            body.println("              console.log('SEND: ' + url);");
+
+            body.println("              req.addEventListener('progress', function (e) {");
+            body.println("                  var done = e.position || e.loaded, total = e.totalSize || e.total;");
+            body.println("                  console.log('xhr progress: ' + (Math.floor(done / total * 1000) / 10) + '%');");
+            body.println("              }, false);");
+
+            body.println("              if (req.upload) {");
+            body.println("                  req.upload.onprogress = function (e) {");
+            body.println("                      var done = e.position || e.loaded, total = e.totalSize || e.total;");
+            body.println("                      console.log('xhr.upload progress: ' + done + ' / ' + total + ' = ' + (Math.floor(done / total * 1000) / 10) + '%');");
+            body.println("                  };");
+            body.println("              }");
+            body.println("              req.onreadystatechange = function (e) {");
+            body.println("                  if (4 === this.readyState) {");
+            body.println("                      console.log(['xhr upload complete', e]);");
+            body.println("                  }");
+            body.println("              };");
+            body.println("              req.open('POST', url, false);");
+            body.println("              req.send(formData);");
             body.println("          }");
             body.println("      </script>");
 
@@ -322,20 +341,22 @@ public class PageDefaultFolder extends Page {
                     body.println("      <td>");
                     if (pluginJqwidjets) {
                         body.println("  <div id=\"jqxFileUpload\"></div>");
-                        //                body.println("  <div id=\"jqxProgressBar\"></div>");
                         body.println("  <div id=\"eventsPanel\"></div>");
 
                     } else {
-                        body.println("          <form method=\"post\" action=\"/admin/Upload?Destination=" + page + "\" enctype=\"multipart/form-data\">");
+                        //body.println("          <form method=\"post\" action=\"/admin/Upload?Destination=" + page + "\" enctype=\"multipart/form-data\">");
+                        body.println("          <form method=\"post\" action=\"\" enctype=\"multipart/form-data\">");
                         body.println("            <input type=\"file\" name=\"file\" size=\"30\">");
 
                         String websocket = "";
                         if (this.webserver.isWebsocketEnabled()) {
-                            websocket = "onClick=\"websocketFolder.close();\"";
+                            //websocket = "onClick=\"websocketFolder.close();\"";
+                            websocket = "onClick=\"uploadFile('" + page + "');\"";
                         }
                         body.println("      <BR>");
                         body.println("      <BR>");
-                        body.println("            <input type=\"submit\" name=\"upload\" value=\"Upload\" " + websocket + ">");
+                        //body.println("            <input type=\"submit\" name=\"upload\" value=\"Upload\" " + websocket + ">");
+                        body.println("            <button name=\"upload\" value=\"Upload\" " + websocket + ">Upload</button>");
                         body.println("            <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"" + this.webserver.getFileUploadLimit() + "\" />");
                         body.println("          </form>");
                     }

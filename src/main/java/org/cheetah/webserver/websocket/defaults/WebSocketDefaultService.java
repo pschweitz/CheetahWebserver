@@ -27,12 +27,11 @@ public class WebSocketDefaultService extends WebSocketService {
     @Override
     public void connect(Session connection) {
 
-
         FrameChannel socket = connection.getChannel();
 
         String user = listener.getUserName(connection);
         logger.debug("Websocket CONNECT: " + user);
-        
+
         String secWebSocketKey = connection.getRequest().getValue("Sec-WebSocket-Key");
 
         if (!users.containsKey(secWebSocketKey)) {
@@ -55,6 +54,7 @@ public class WebSocketDefaultService extends WebSocketService {
 
     @Override
     public void join(String secWebSocketKey, String user, FrameChannel operation) {
+    //    logger.debug("Websocket KEY : " + secWebSocketKey);
         logger.debug("Websocket JOIN: " + user);
         sockets.put(secWebSocketKey, operation);
         users.put(secWebSocketKey, user);
@@ -129,6 +129,9 @@ public class WebSocketDefaultService extends WebSocketService {
         try {
             for (String secWebSocketKey : users.keySet()) {
 
+            //    logger.debug("Key : " + secWebSocketKey);
+            //    logger.debug("User: " + users.get(secWebSocketKey));
+                
                 String user = users.get(secWebSocketKey);
                 if (destinationUser.equals(user)) {
 
@@ -150,7 +153,6 @@ public class WebSocketDefaultService extends WebSocketService {
                         } catch (Exception e1) {
                         }
                     }
-                    break;
                 }
             }
         } catch (Exception e) {

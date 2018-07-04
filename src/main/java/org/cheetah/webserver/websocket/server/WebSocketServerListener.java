@@ -15,9 +15,9 @@ class WebSocketServerListener<RequestObject extends Serializable, ResponseObject
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(WebSocketServerListener.class);
 
-    AbstractWebSocketServerWorker webSocketServerWorker;
+    Class<? extends AbstractWebSocketServerWorker> webSocketServerWorker;
 
-    public WebSocketServerListener(WebSocketDefaultService webSocketService, AbstractWebSocketServerWorker webSocketServerWorker) {
+    public WebSocketServerListener(WebSocketDefaultService webSocketService, Class<? extends AbstractWebSocketServerWorker> webSocketServerWorker) {
         super(webSocketService);
         this.webSocketServerWorker = webSocketServerWorker;
     }
@@ -42,7 +42,7 @@ class WebSocketServerListener<RequestObject extends Serializable, ResponseObject
 
                 String requeststring = frame.getText();
 
-                AbstractWebSocketServerWorker webSocketServerWorker = this.webSocketServerWorker.getClass().newInstance();
+                AbstractWebSocketServerWorker webSocketServerWorker = this.webSocketServerWorker.newInstance();
                 webSocketServerWorker.setFrame(frame);
                 webSocketServerWorker.setRequest(session);
                 webSocketServerWorker.setWebSocketService(this.webSocketService);
@@ -94,7 +94,7 @@ class WebSocketServerListener<RequestObject extends Serializable, ResponseObject
 
                     ResponseObject response = null;
 
-                    AbstractWebSocketServerWorker webSocketServerWorker = this.webSocketServerWorker.getClass().newInstance();
+                    AbstractWebSocketServerWorker webSocketServerWorker = this.webSocketServerWorker.newInstance();
                     webSocketServerWorker.setFrame(frame);
                     webSocketServerWorker.setRequest(session);
                     webSocketServerWorker.setWebSocketService(this.webSocketService);

@@ -1255,14 +1255,16 @@ public class RequestResolver {
             String extention = url.toString().substring(extentionIndex + 1);
             mimeType = MimeType.getMimeType(extention);
 
+            /*
             if (MimeType.isText(extention)) {
                 response.setValue("Content-Type", mimeType);
                 this.webserver.getDefaultUtilsClass().readTextFile(request, body, url, Charset.forName("utf-8"));
 
             } else {
+            */
                 response.setValue("Content-Type", mimeType);
                 this.webserver.getDefaultUtilsClass().readBinaryFile(request, body, url);
-            }
+           // }
         } else {
             response.setValue("Content-Type", mimeType);
             this.webserver.getDefaultUtilsClass().readBinaryFile(request, body, url);
@@ -1281,14 +1283,16 @@ public class RequestResolver {
             if (!extention.equals("class")) {
                 mimeType = MimeType.getMimeType(extention);
 
+                /*
                 if (MimeType.isText(extention)) {
                     response.setValue("Content-Type", mimeType);
                     this.webserver.getDefaultUtilsClass().readTextFileRessource(request, body, url, this.webserver.getClassLoader(), Charset.forName("utf-8"));
 
                 } else {
+*/
                     response.setValue("Content-Type", mimeType);
                     this.webserver.getDefaultUtilsClass().readBinaryFileRessource(request, body, url, this.webserver.getClassLoader());
-                }
+              //  }
             } else {
                 Status status = Status.NOT_FOUND;
                 try {

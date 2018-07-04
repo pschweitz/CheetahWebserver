@@ -5,11 +5,7 @@
  */
 package org.cheetah.webserver.page.login;
 
-import org.cheetah.webserver.page.*;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import org.cheetah.webserver.AbstractPageDefault;
 import org.cheetah.webserver.Page;
 import org.simpleframework.http.Request;
@@ -34,7 +30,7 @@ public class Logo extends Page {
         try {
             URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/login/logo.png");
 
-            logger.debug("url: " + url.toString());
+            //logger.debug("url: " + url.toString());
 
             this.webserver.getDefaultUtilsClass().readBinaryFileRessource(request, body, url, this.webserver.getClassLoader());
 

@@ -20,7 +20,7 @@ class WebSocketServerService<RequestObject extends Serializable, ResponseObject 
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(WebSocketServerService.class);
 
      
-    public WebSocketServerService(AbstractWebSocketServerWorker webSocketServerWorker){    
+    public WebSocketServerService(Class<? extends AbstractWebSocketServerWorker> webSocketServerWorker){    
         this.listener = new WebSocketServerListener(this, webSocketServerWorker);
     }    
 }

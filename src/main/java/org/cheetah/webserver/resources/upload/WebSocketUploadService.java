@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import org.cheetah.webserver.page.admin.Upload;
 import static org.cheetah.webserver.page.admin.Upload.uploadInformationMap;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.simpleframework.http.socket.CloseCode;
 import org.simpleframework.http.socket.DataFrame;
 import org.simpleframework.http.socket.Frame;

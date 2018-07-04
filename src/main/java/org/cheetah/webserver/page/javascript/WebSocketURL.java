@@ -21,7 +21,7 @@ public class WebSocketURL extends Page {
 
     @Override
     public void handle(Request request, Response response) {
-        logger.debug("START: Handle Request");
+        logger.trace("START: Handle Request");
 
         response.setValue("Content-Type", "application/javascript");
 
@@ -42,6 +42,6 @@ public class WebSocketURL extends Page {
                 .append("	}");
 
         body.println(bodyString.toString());
-        logger.debug(" END : Handle Request");
+        logger.trace(" END : Handle Request");
     }
 }

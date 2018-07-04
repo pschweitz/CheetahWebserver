@@ -12,7 +12,7 @@ public class ServerPage extends WebSocketServerPage {
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(ServerPage.class);
 
     public ServerPage(){
-        super(new WebSocketServerWorkerEcho());
+        super(WebSocketServerWorkerEcho.class);
     }
     
     public void handle(Request request, Response response) {

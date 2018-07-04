@@ -9,7 +9,7 @@ public abstract class WebSocketServerPage<RequestObject extends Serializable, Re
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(WebSocketServerPage.class);
 
-    public WebSocketServerPage(AbstractWebSocketServerWorker webSocketServerWorker) {
+    public WebSocketServerPage(Class<? extends AbstractWebSocketServerWorker> webSocketServerWorker) {
         super();
         service = new WebSocketServerService(webSocketServerWorker);
     }

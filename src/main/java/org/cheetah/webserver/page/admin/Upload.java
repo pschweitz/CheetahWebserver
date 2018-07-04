@@ -16,7 +16,7 @@ import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import org.cheetah.webserver.resources.upload.UploadInformation;
 import org.cheetah.webserver.resources.upload.WebSocketUploadPage;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.simpleframework.http.ContentType;
 import org.simpleframework.http.Part;
 import org.simpleframework.http.Request;
@@ -209,8 +209,6 @@ public class Upload extends WebSocketUploadPage {
 
                         if (fileSize > uploadLimit) {
                             try {
-                                //part.getInputStream().skip(Long.MAX_VALUE);
-                                //part.getInputStream().read();
                                 part.getInputStream().close();
                             } catch (Exception ex) {
                             }
@@ -268,7 +266,7 @@ public class Upload extends WebSocketUploadPage {
             }
         }
 
-        if (responseJSON.containsKey("MessageType")) {
+        if (responseJSON.has("MessageType")) {
 
             if (((String)responseJSON.get("MessageType")).equalsIgnoreCase("error")) {
                 response.setValue("Content-Type", "application/json");
@@ -280,77 +278,6 @@ public class Upload extends WebSocketUploadPage {
         } else {
             response.setValue("Content-Type", "text/html");
         }
-
-        /*
-        if (!noProgressBar.equals("true")) {
-
-            final String destinationFileFinal = destinationFile;
-            Thread t = new Thread() {
-
-                @Override
-                public void run() {
-
-                    if (uploadInformationMap.containsKey(destinationFileFinal)) {
-
-                        UploadInformation info = uploadInformationMap.get(destinationFileFinal);
-                        while (!info.canceled || !info.finished) {
-                            webserver.distributeToWebsocketServiceMessage("org.cheetah.webserver.page.admin.Upload", String.valueOf(info.fileSent));
-
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException ex) {
-                            }
-                        }
-                    }
-                }
-
-            };
-            t.start();
-            /*
-            try {
-                URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/upload/adminUpload.htm");
-
-                logger.debug("url: " + url.toString());
-
-                if (!this.webserver.isWebsocketEnabled() || !errorMessage.equals("")) {
-                    body.println("<!DOCTYPE html>");
-                    body.println("<html>");
-                    body.println("    <head>");
-                    body.println("        <script type=\"text/javascript\">");
-                    body.println("              function goback() {");
-                    body.println("                window.location = document.referrer;");
-                    body.println("              }");
-                    if (errorMessage.equals("")) {
-                        body.println("              window.location = document.referrer;");
-                    }
-                    body.println("        </script>");
-                    body.println("    </head>");
-                    body.println("    <body>");
-                    if (!errorMessage.equals("")) {
-                        body.println("        <div id=\"status\">" + errorMessage + "</div>");
-                    } else {
-                        body.println("        <div id=\"status\"> Upload successfull </div>");
-                    }
-                    body.println("        <button onclick=\"goback()\">Close</button>");
-                    body.println("    </body>");
-                    body.println("</html>");
-                } else {
-                    this.webserver.getDefaultUtilsClass().readTextFileRessource(request, body, url, this.webserver.getClassLoader(), Charset.forName("utf-8"));
-                }
-
-            } catch (IOException ex) {
-                response.setStatus(Status.NOT_FOUND);
-                logger.error("Error uploading file: " + ex.toString());
-            } catch (URISyntaxException ex) {
-                response.setStatus(Status.NOT_FOUND);
-                logger.error("Error uploading file: " + ex.toString());
-            } catch (Exception ex) {
-                response.setStatus(Status.NOT_FOUND);
-                logger.error("Error uploading file: " + ex.toString());
-            }
-             *
-        }
-        */
 
         this.webserver.distributeToWebsocketServiceMessage("org.cheetah.webserver.page.ressources.FolderWebSocket", destination.substring(fileRoot.length()));
     }
@@ -426,7 +353,6 @@ public class Upload extends WebSocketUploadPage {
                 } catch (Exception ex) {
                 }
             }
-            //uploadInformation.errorMessage = "test23";
             uploadInformation.finished = true;
         }
     }

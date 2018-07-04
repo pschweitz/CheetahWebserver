@@ -24,7 +24,6 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import org.java_websocket.client.AbstractWebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.slf4j.LoggerFactory;
 
@@ -225,7 +224,7 @@ public class WebSocketClient<WebSocketClientWorkerImpl extends AbstractWebSocket
 
     }
 
-    private class WebSocketClientImpl extends AbstractWebSocketClient {
+    private class WebSocketClientImpl extends org.java_websocket.client.WebSocketClient {
 
         public WebSocketClientImpl(URI serverURI, Map headers) {
             super(serverURI, headers);

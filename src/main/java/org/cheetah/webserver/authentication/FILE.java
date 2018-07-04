@@ -972,7 +972,7 @@ public class FILE extends AbstractAuthenticator {
             writeComments(bw, comments);
         }
         //bw.write("#" + new Date().toString());
-        bw.newLine();
+        //bw.newLine();
         synchronized (this) {
             for (Enumeration<?> e = keys(); e.hasMoreElements();) {
                 String key = (String)e.nextElement();

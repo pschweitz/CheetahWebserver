@@ -4,7 +4,6 @@ import java.util.StringTokenizer;
 import org.simpleframework.http.socket.*;
 
 import org.simpleframework.http.Request;
-import org.simpleframework.http.Response;
 import org.slf4j.LoggerFactory;
 
 public class WebSocketDefaultListener implements FrameListener {

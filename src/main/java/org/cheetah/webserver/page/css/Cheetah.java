@@ -25,14 +25,14 @@ public class Cheetah extends Page {
 
     @Override
     public void handle(Request request, Response response) {
-        logger.debug("START: Handle Request");
+        //logger.trace("START: Handle Request");
 
         response.setValue("Content-Type", "text/css");
 
         try {
             URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/cheetah.css");
 
-            logger.debug("url: " + url.toString());
+            //logger.debug("url: " + url.toString());
 
             this.webserver.getDefaultUtilsClass().readTextFileRessource(request, body, url, this.webserver.getClassLoader(), Charset.forName("UTF-8"));
 
@@ -48,7 +48,7 @@ public class Cheetah extends Page {
                 logger.error("Error generating " + status.getDescription() + ": " + ex2.toString());
             }
         }
-        logger.debug(" END : Handle Request");
+        logger.trace(" END : Handle Request");
     }
     
     private void handleDefaultPage(Status status, Exception e, Request request, Response response) throws Exception {

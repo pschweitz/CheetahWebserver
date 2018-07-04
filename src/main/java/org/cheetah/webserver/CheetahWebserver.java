@@ -783,6 +783,22 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         }
     }
 
+    public List<String> getUserNames(String serviceClassName) {
+        
+        ArrayList<String> result = new ArrayList(); 
+
+        if (websocketServiceList.containsKey(serviceClassName)) {
+            WebSocketService webSocketService = websocketServiceList.get(serviceClassName);
+            
+            for(String username: webSocketService.getUsers().values()){
+                result.add(username);
+            }            
+            
+        }
+        
+        return result;
+    }
+
     // allows cascade sending of frames if in distribute(String) of webssocket service, it forwards to another websocket.
     public void distributeToWebsocketServiceMessage(String serviceClassName, String message) {
 
@@ -1257,6 +1273,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         }
         if (webserver != null) {
             webserver.printProperties();
+            webserver.setPrintURLResolvingTraces(false);
         }
     }
 

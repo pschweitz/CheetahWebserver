@@ -31,7 +31,7 @@ public class Login extends Page {
         try {
             URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/login/login.htm");
 
-            logger.debug("url: " + url.toString());
+            //logger.debug("url: " + url.toString());
             
             this.webserver.getDefaultUtilsClass().readTextFileRessource(request, body, url, this.webserver.getClassLoader(), Charset.forName("utf-8"));
 

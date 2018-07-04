@@ -5,8 +5,6 @@
  */
 package org.cheetah.webserver.page.javascript;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import org.cheetah.webserver.Page;
@@ -32,7 +30,7 @@ public class WebSocketUpload extends Page {
         try {
             URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/upload/websocketUpload.js");
 
-            logger.debug("url: " + url.toString());
+            //logger.debug("url: " + url.toString());
             this.webserver.getDefaultUtilsClass().readTextFileRessource(request, body, url, this.webserver.getClassLoader(), Charset.forName("utf-8"));
             
         } catch (Exception ex) {

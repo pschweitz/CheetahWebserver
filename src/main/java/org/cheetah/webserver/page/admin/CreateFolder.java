@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.cheetah.webserver.Page;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.LoggerFactory;

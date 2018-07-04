@@ -8,9 +8,7 @@ package org.cheetah.webserver.websocket.defaults;
 
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import org.cheetah.webserver.CheetahWebserver;
 import org.simpleframework.common.buffer.Allocator;
 import org.simpleframework.http.core.ContainerTransportProcessor;
