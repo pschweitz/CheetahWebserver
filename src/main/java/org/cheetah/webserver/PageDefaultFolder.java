@@ -260,10 +260,6 @@ public class PageDefaultFolder extends Page {
             body.println("                      json = xmlHttp.responseText");
             body.println("                      if (json === \"\") {");
             body.println("                          json = \"{}\";");
-            body.println("                      } else {");
-            body.println("                          var n = json.search(/>{/i);");
-            body.println("                          json = event.args.response.substring(n+1);");
-            body.println("                          json = json.replace(\"</pre>\", \"\");");
             body.println("                      }");
             body.println("                      data = JSON.parse(json);");
             body.println("                      if (data.MessageType === \"Error\") {");
@@ -282,10 +278,18 @@ public class PageDefaultFolder extends Page {
             body.println("          }");          
             
             
-            body.println("          function uploadFile(destination, formData) {");
+            body.println("          function uploadFile(destination) {");
             body.println("              const req = new XMLHttpRequest();");
             body.println("              let url = '/admin/Upload?Destination=' + destination;");
-            body.println("              websocketFolder.close();");
+            
+            body.println("              var formElement = document.querySelector(\"form\");");
+            //body.println("              websocketFolder.close();");
+            body.println("              var formData = new FormData(formElement);");
+            //body.println("              var element = document.getElementById(\"fileInput\")");
+            body.println("              console.log('formData')");
+            body.println("              console.log(formData)");
+            //body.println("              formData.append(document.getElementById(\"fileInput\")[0].files[0], {type: \"application/octet-stream\"}));");
+                       
             
             
 
@@ -346,18 +350,16 @@ public class PageDefaultFolder extends Page {
                     } else {
                         //body.println("          <form method=\"post\" action=\"/admin/Upload?Destination=" + page + "\" enctype=\"multipart/form-data\">");
                         body.println("          <form method=\"post\" action=\"\" enctype=\"multipart/form-data\">");
-                        body.println("            <input type=\"file\" name=\"file\" size=\"30\">");
-
-                        String websocket = "";
-                        if (this.webserver.isWebsocketEnabled()) {
-                            //websocket = "onClick=\"websocketFolder.close();\"";
-                            websocket = "onClick=\"uploadFile('" + page + "');\"";
-                        }
-                        body.println("      <BR>");
-                        body.println("      <BR>");
+                //        body.println("            <table><tr><td>");
+                        body.println("            <input id=\"fileInput\" type=\"file\" name=\"file\" size=\"30\">");
+                //        body.println("            </td>");
+                        body.println("            <BR>");
+                        body.println("             <BR>");
                         //body.println("            <input type=\"submit\" name=\"upload\" value=\"Upload\" " + websocket + ">");
-                        body.println("            <button name=\"upload\" value=\"Upload\" " + websocket + ">Upload</button>");
+                //        body.println("            <td>");
+                        body.println("            <button name=\"upload\" value=\"Upload\" onClick=\"uploadFile('" + page + "');\">Upload</button>");
                         body.println("            <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"" + this.webserver.getFileUploadLimit() + "\" />");
+                //        body.println("            </td></tr></table>");
                         body.println("          </form>");
                     }
 

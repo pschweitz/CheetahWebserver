@@ -20,8 +20,6 @@ public class CheckWebSocketTextClient<RequestObject extends Serializable, Respon
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(CheckWebSocketTextClient.class);
 
     private Socket socket;
-    private StreamCursor cursor;
-    private FrameConsumer consumer;
 
     private String host;
     private int port;

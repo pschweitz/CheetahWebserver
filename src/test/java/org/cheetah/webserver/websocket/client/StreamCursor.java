@@ -31,7 +31,6 @@ public class StreamCursor implements ByteCursor {
       this.swap = new byte[1];
    }
 
-   // TODO investigate this
    public boolean isOpen() throws IOException {
       return true;
    }

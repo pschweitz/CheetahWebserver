@@ -53,7 +53,6 @@ public class SessionDirectory {
                             removeSessionData(sessionData.getCookie());
                         }
                     }
-
                 }
             }
         };

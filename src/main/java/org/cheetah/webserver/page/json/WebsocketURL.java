@@ -39,6 +39,7 @@ public class WebsocketURL extends Page {
         logger.debug("websocketURL: " + URLWS);
 
         jsonResult.put("websocketURL", URLWS);
+        jsonResult.put("TEST3", URLWS);
 
         //logger.debug("WS URL:" + jsonResult);
 

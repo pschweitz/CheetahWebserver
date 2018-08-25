@@ -25,7 +25,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
 import static org.cheetah.webserver.RessourceFinder.getFileInformationFromRessourceURL;
+
 import org.cheetah.webserver.websocket.defaults.WebSocketPage;
 import org.simpleframework.http.Cookie;
 import org.simpleframework.http.Request;
@@ -35,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author phs
  */
 public class RequestResolver {
@@ -74,6 +75,10 @@ public class RequestResolver {
         debugString = new StringBuilder();
         debugString.append(System.lineSeparator());
         debugString.append("***** REQUEST ***********************************").append(System.lineSeparator());
+        if (this.webserver.getWebserverMode().equals("Development")) {
+            this.debugString.append("***** Development Mode ").append(System.lineSeparator());
+        }
+
         StringTokenizer requestTokenizer = new StringTokenizer(request.toString(), "\r\n");
 
         String username = this.webserver.getUsername(request);
@@ -98,10 +103,16 @@ public class RequestResolver {
 
                 debugString.append("** " + elements[0]);
 
-                for (int i = 1; i < elements.length; i++) {
-                    debugString.append(":" + elements[i]);
-                }
+                if (elements[0].equalsIgnoreCase("Authorization")) {
+                    for (int i = 1; i < elements.length; i++) {
+                        this.debugString.append(":" + elements[i]);
+                    }
 
+                } else {
+                    for (int i = 1; i < elements.length; i++) {
+                        this.debugString.append(":" + elements[i]);
+                    }
+                }
                 debugString.append(System.lineSeparator());
             }
 
@@ -231,7 +242,7 @@ public class RequestResolver {
                 try {
                     body = response.getPrintStream();
                     Class lookupPage = null;
-                    lookupPage = PageAuthentication.class;
+                    lookupPage = this.webserver.getClassFromParentClassLoader("org.cheetah.webserver.PageAuthentication");
                     Page page = (Page) lookupPage.newInstance();
                     page.setRessources(body, webserver, debugString);
                     page.handle(request, response);
@@ -256,47 +267,44 @@ public class RequestResolver {
 
         try {
 
-       //     body = response.getPrintStream();
-
+            //     body = response.getPrintStream();
             if (Files.exists(targetPath)) {
 
-                
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists"); 
-            debugString.append("Case: File exists").append(System.lineSeparator());
-            }
+                if (webserver.isPrintURLResolvingTraces()) {
+                    System.out.println("Case: File exists");
+                    debugString.append("Case: File exists").append(System.lineSeparator());
+                }
                 if (Files.isRegularFile(targetPath, LinkOption.NOFOLLOW_LINKS)) {
 
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: regular file"); 
-            debugString.append("Case: File exists: regular file").append(System.lineSeparator());
-            }
+                    if (webserver.isPrintURLResolvingTraces()) {
+                        System.out.println("Case: File exists: regular file");
+                        debugString.append("Case: File exists: regular file").append(System.lineSeparator());
+                    }
                     response.setContentLength(targetPath.toFile().length());
                     response.setDate("Last-Modified", targetPath.toFile().lastModified());
-                    
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                    readFile(request, Paths.get(targetPath.toString()).toUri().toURL());
-    }
-    
+
+                    body = response.getPrintStream();
+
+                    if (!request.getMethod().equalsIgnoreCase("head")) {
+                        readFile(request, Paths.get(targetPath.toString()).toUri().toURL());
+                    }
 
                 } else if (Files.isDirectory(targetPath, LinkOption.NOFOLLOW_LINKS)) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory"); 
-            debugString.append("Case: File exists: is directory").append(System.lineSeparator());
-            }
+                    if (webserver.isPrintURLResolvingTraces()) {
+                        System.out.println("Case: File exists: is directory");
+                        debugString.append("Case: File exists: is directory").append(System.lineSeparator());
+                    }
                     if (this.webserver.isFileFolderBrowsingEnabled()) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory: folder browsing"); 
-            debugString.append("Case: File exists: is directory: folder browsing").append(System.lineSeparator());
-            }
+                        if (webserver.isPrintURLResolvingTraces()) {
+                            System.out.println("Case: File exists: is directory: folder browsing");
+                            debugString.append("Case: File exists: is directory: folder browsing").append(System.lineSeparator());
+                        }
                         try {
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                            handleFolderBrowsing();
-    }
+                            body = response.getPrintStream();
+
+                            if (!request.getMethod().equalsIgnoreCase("head")) {
+                                handleFolderBrowsing();
+                            }
 
                         } catch (Exception ex) {
                             debugString.append("Error generating folder browsing: " + ex.toString()).append(System.lineSeparator());
@@ -323,17 +331,17 @@ public class RequestResolver {
                             Path indexPath = targetPath.resolve(indexPageName);
 
                             if (Files.exists(indexPath)) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory: default page file found: " + indexPageName); 
-            debugString.append("Case: File exists: is directory: default page file found: " + indexPageName).append(System.lineSeparator());
-            }
+                                if (webserver.isPrintURLResolvingTraces()) {
+                                    System.out.println("Case: File exists: is directory: default page file found: " + indexPageName);
+                                    debugString.append("Case: File exists: is directory: default page file found: " + indexPageName).append(System.lineSeparator());
+                                }
                                 response.setContentLength(indexPath.toFile().length());
                                 response.setDate("Last-Modified", indexPath.toFile().lastModified());
-    body = response.getPrintStream();  
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                readFile(request, indexPath.toUri().toURL());
-    }
+                                body = response.getPrintStream();
+
+                                if (!request.getMethod().equalsIgnoreCase("head")) {
+                                    readFile(request, indexPath.toUri().toURL());
+                                }
                                 found = true;
                                 break;
 
@@ -343,10 +351,10 @@ public class RequestResolver {
                         Class lookupPage = null;
                         if (!found) {
 
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory: default page class"); 
-            debugString.append("Case: File exists: is directory: default page class").append(System.lineSeparator());
-            }
+                            if (webserver.isPrintURLResolvingTraces()) {
+                                System.out.println("Case: File exists: is directory: default page class");
+                                debugString.append("Case: File exists: is directory: default page class").append(System.lineSeparator());
+                            }
                             defaultPageTokenizer = new StringTokenizer(defaultPages, ";");
 
                             while (defaultPageTokenizer.hasMoreTokens()) {
@@ -389,10 +397,10 @@ public class RequestResolver {
                                     } else {
                                         lookupPage = this.webserver.getClass(packagePageName + "." + indexPageName);
                                     }
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory: default page class found: " + indexPageName); 
-            debugString.append("Case: File exists: is directory: default page class found: " + indexPageName).append(System.lineSeparator());
-            }
+                                    if (webserver.isPrintURLResolvingTraces()) {
+                                        System.out.println("Case: File exists: is directory: default page class found: " + indexPageName);
+                                        debugString.append("Case: File exists: is directory: default page class found: " + indexPageName).append(System.lineSeparator());
+                                    }
                                     found = true;
                                     break;
                                 } catch (Exception e) {
@@ -405,13 +413,13 @@ public class RequestResolver {
 
                                 Page page;
                                 try {
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                    page = (Page) lookupPage.newInstance();
-                                    page.setRessources(body, webserver, debugString);                                    
-                                    page.handle(request, response);
-    }
+                                    body = response.getPrintStream();
+
+                                    if (!request.getMethod().equalsIgnoreCase("head")) {
+                                        page = (Page) lookupPage.newInstance();
+                                        page.setRessources(body, webserver, debugString);
+                                        page.handle(request, response);
+                                    }
                                 } catch (Exception ex) {
                                     Status status = Status.INTERNAL_SERVER_ERROR;
                                     try {
@@ -420,10 +428,10 @@ public class RequestResolver {
                                             debugString.append("\t" + element.toString()).append(System.lineSeparator());
                                         }
                                         logger.error("Error generating response:" + status.getDescription() + ": " + ex.toString());
-                                        
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                        handleDefaultPage(status, ex);
-    }
+
+                                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                                            handleDefaultPage(status, ex);
+                                        }
 
                                     } catch (Exception ex2) {
                                         debugString.append("Error generating :" + status.getDescription() + ": " + ex2.toString()).append(System.lineSeparator());
@@ -434,10 +442,10 @@ public class RequestResolver {
                             }
 
                             if (!found) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory: default page plugin"); 
-            debugString.append("Case: File exists: is directory: default page plugin").append(System.lineSeparator());
-            }
+                                if (webserver.isPrintURLResolvingTraces()) {
+                                    System.out.println("Case: File exists: is directory: default page plugin");
+                                    debugString.append("Case: File exists: is directory: default page plugin").append(System.lineSeparator());
+                                }
                                 defaultPageTokenizer = new StringTokenizer(defaultPages, ";");
                                 while (defaultPageTokenizer.hasMoreTokens()) {
 
@@ -446,19 +454,19 @@ public class RequestResolver {
                                     if (this.webserver.getClassLoader().getResourceAsStream(page.substring(1) + "/" + indexPageName) != null) {
 
                                         URL url = this.webserver.getClassLoader().getResource(page.substring(1) + "/" + indexPageName);
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory: default page plugin found: " + indexPageName); 
-            debugString.append("Case: File exists: is directory: default page plugin found: " + indexPageName).append(System.lineSeparator());
-            }
-                                        
+                                        if (webserver.isPrintURLResolvingTraces()) {
+                                            System.out.println("Case: File exists: is directory: default page plugin found: " + indexPageName);
+                                            debugString.append("Case: File exists: is directory: default page plugin found: " + indexPageName).append(System.lineSeparator());
+                                        }
+
                                         FileInformation fileInformation = getFileInformationFromRessourceURL(url);
                                         response.setContentLength(fileInformation.getSize());
                                         response.setDate("Last-Modified", fileInformation.getLastModified());
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                        readFileRessource(url);
-    }
+                                        body = response.getPrintStream();
+
+                                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                                            readFileRessource(url);
+                                        }
                                         found = true;
                                         break;
 
@@ -468,10 +476,10 @@ public class RequestResolver {
 
                             lookupPage = null;
                             if (!found) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is directory: default class plugin");   
-            debugString.append("Case: File exists: is directory: default class plugin").append(System.lineSeparator());
-            }
+                                if (webserver.isPrintURLResolvingTraces()) {
+                                    System.out.println("Case: File exists: is directory: default class plugin");
+                                    debugString.append("Case: File exists: is directory: default class plugin").append(System.lineSeparator());
+                                }
                                 defaultPageTokenizer = new StringTokenizer(defaultPages, ";");
 
                                 while (defaultPageTokenizer.hasMoreTokens()) {
@@ -506,10 +514,10 @@ public class RequestResolver {
 
                                     try {
                                         lookupPage = this.webserver.getClass(packageName + "." + indexPageName);
-            if(webserver.isPrintURLResolvingTraces()){                               
-            System.out.println("Case: File exists: is directory: default class plugin found: " + indexPageName);       
-            debugString.append("Case: File exists: is directory: default class plugin found: " + indexPageName).append(System.lineSeparator());
-            }
+                                        if (webserver.isPrintURLResolvingTraces()) {
+                                            System.out.println("Case: File exists: is directory: default class plugin found: " + indexPageName);
+                                            debugString.append("Case: File exists: is directory: default class plugin found: " + indexPageName).append(System.lineSeparator());
+                                        }
                                         found = true;
                                         break;
                                     } catch (Exception e1) {
@@ -523,13 +531,13 @@ public class RequestResolver {
 
                                     Page page;
                                     try {
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                        page = (Page) lookupPage.newInstance();
-                                        page.setRessources(body, webserver, debugString);
-                                        page.handle(request, response);
-    }
+                                        body = response.getPrintStream();
+
+                                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                                            page = (Page) lookupPage.newInstance();
+                                            page.setRessources(body, webserver, debugString);
+                                            page.handle(request, response);
+                                        }
                                     } catch (Exception ex) {
                                         Status status = Status.INTERNAL_SERVER_ERROR;
                                         try {
@@ -538,10 +546,10 @@ public class RequestResolver {
                                                 debugString.append("\t" + element.toString()).append(System.lineSeparator());
                                             }
                                             logger.error("Error generating response:" + status.getDescription() + ": " + ex.toString());
-                                            
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                            handleDefaultPage(status, ex);
-    }
+
+                                            if (!request.getMethod().equalsIgnoreCase("head")) {
+                                                handleDefaultPage(status, ex);
+                                            }
 
                                         } catch (Exception ex2) {
                                             debugString.append("Error generating :" + status.getDescription() + ": " + ex2.toString()).append(System.lineSeparator());
@@ -554,17 +562,17 @@ public class RequestResolver {
                             }
 
                             if (!found) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: Not found: File directory: no default page");
-            debugString.append("Case: Not found: File directory: no default page").append(System.lineSeparator());
-            }
+                                if (webserver.isPrintURLResolvingTraces()) {
+                                    System.out.println("Case: Not found: File directory: no default page");
+                                    debugString.append("Case: Not found: File directory: no default page").append(System.lineSeparator());
+                                }
                                 Status status = Status.NOT_FOUND;
                                 try {
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                    handleDefaultPage(status);
-    }
+                                    body = response.getPrintStream();
+
+                                    if (!request.getMethod().equalsIgnoreCase("head")) {
+                                        handleDefaultPage(status);
+                                    }
 
                                 } catch (Exception ex) {
                                     debugString.append("Error generating " + status.getDescription() + ": " + ex.toString()).append(System.lineSeparator());
@@ -576,33 +584,33 @@ public class RequestResolver {
                     body.close();
 
                 } else if (Files.isSymbolicLink(targetPath)) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File exists: is symlink");
-            debugString.append("Case: File exists: is symlink").append(System.lineSeparator());
-            }
+                    if (webserver.isPrintURLResolvingTraces()) {
+                        System.out.println("Case: File exists: is symlink");
+                        debugString.append("Case: File exists: is symlink").append(System.lineSeparator());
+                    }
                     if (this.webserver.isFileFollowSymLinks()) {
 
                         response.setContentLength(targetPath.toFile().length());
                         response.setDate("Last-Modified", targetPath.toFile().lastModified());
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                        readFile(request, Paths.get(targetPath.toString()).toUri().toURL());
-    }
+                        body = response.getPrintStream();
+
+                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                            readFile(request, Paths.get(targetPath.toString()).toUri().toURL());
+                        }
 
                     } else {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: Not found: File: no follow symlink");
-            debugString.append("Case: Not found: File: no follow symlink").append(System.lineSeparator());
-            }
+                        if (webserver.isPrintURLResolvingTraces()) {
+                            System.out.println("Case: Not found: File: no follow symlink");
+                            debugString.append("Case: Not found: File: no follow symlink").append(System.lineSeparator());
+                        }
                         Status status = Status.NOT_FOUND;
                         try {
 
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                            handleDefaultPage(status);
-    }
+                            body = response.getPrintStream();
+
+                            if (!request.getMethod().equalsIgnoreCase("head")) {
+                                handleDefaultPage(status);
+                            }
 
                         } catch (Exception ex) {
 
@@ -614,18 +622,18 @@ public class RequestResolver {
                         }
                     }
                 } else {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: Not found: File type unrecognized");
-            debugString.append("Case: Not found: File type unrecognized").append(System.lineSeparator());
-            }
+                    if (webserver.isPrintURLResolvingTraces()) {
+                        System.out.println("Case: Not found: File type unrecognized");
+                        debugString.append("Case: Not found: File type unrecognized").append(System.lineSeparator());
+                    }
                     Status status = Status.NOT_FOUND;
                     try {
 
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                        handleDefaultPage(status);
-    }
+                        body = response.getPrintStream();
+
+                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                            handleDefaultPage(status);
+                        }
 
                     } catch (Exception ex) {
 
@@ -638,10 +646,10 @@ public class RequestResolver {
                 }
 
             } else {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists");
-            debugString.append("Case: File not exists").append(System.lineSeparator());
-            }
+                if (webserver.isPrintURLResolvingTraces()) {
+                    System.out.println("Case: File not exists");
+                    debugString.append("Case: File not exists").append(System.lineSeparator());
+                }
                 String pageName = page.substring(1);
 
                 String packageName = "";
@@ -704,13 +712,13 @@ public class RequestResolver {
                     if (lookupPage == null) {
                         lookupPage = this.webserver.getClass(packagePageName + "." + pageName);
                     }
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: found class");
-            debugString.append("Case: File not exists: found class").append(System.lineSeparator());
-            }
-    
-    body = response.getPrintStream(); 
-    
+                    if (webserver.isPrintURLResolvingTraces()) {
+                        System.out.println("Case: File not exists: found class");
+                        debugString.append("Case: File not exists: found class").append(System.lineSeparator());
+                    }
+
+                    body = response.getPrintStream();
+
                     Page page = (Page) lookupPage.newInstance();
                     page.setRessources(body, webserver, debugString);
 
@@ -722,10 +730,10 @@ public class RequestResolver {
                                 ((WebSocketPage) page).initService();
                             }
                         }
-                        
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                        page.handle(request, response);
-    }
+
+                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                            page.handle(request, response);
+                        }
                     } else if (WebSocketPage.class.isAssignableFrom(lookupPage)) {
                         debugString.append("is WebsocketRequest").append(System.lineSeparator());
                         if (isWebsocketEnabled) {
@@ -735,11 +743,10 @@ public class RequestResolver {
                             Status status = Status.BAD_REQUEST;
                             try {
 
-    //body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                handleDefaultPage(status);
-    }
+                                //body = response.getPrintStream(); 
+                                if (!request.getMethod().equalsIgnoreCase("head")) {
+                                    handleDefaultPage(status);
+                                }
 
                             } catch (Exception ex) {
                                 debugString.append("Error generating " + status.getDescription() + ": " + ex.toString()).append(System.lineSeparator());
@@ -752,11 +759,10 @@ public class RequestResolver {
                         Status status = Status.BAD_REQUEST;
                         try {
 
-    //body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                            handleDefaultPage(status);
-    }
+                            //body = response.getPrintStream(); 
+                            if (!request.getMethod().equalsIgnoreCase("head")) {
+                                handleDefaultPage(status);
+                            }
 
                         } catch (Exception ex) {
                             debugString.append("Error generating " + status.getDescription() + ": " + ex.toString()).append(System.lineSeparator());
@@ -770,22 +776,22 @@ public class RequestResolver {
                     boolean found = false;
 
                     if (this.webserver.getClassLoader().getResource((packagePageName + "." + page.substring(1)).replaceAll("\\.", "/")) != null) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: is package");
-            debugString.append("Case: File not exists: is package").append(System.lineSeparator());
-            }
+                        if (webserver.isPrintURLResolvingTraces()) {
+                            System.out.println("Case: File not exists: is package");
+                            debugString.append("Case: File not exists: is package").append(System.lineSeparator());
+                        }
                         if (this.webserver.isFileFolderBrowsingEnabled()) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: Not found: File not exists: is package directory: folder browsing");
-            debugString.append("Case: Not found: File not exists: is package directory: folder browsing").append(System.lineSeparator());
-            }
+                            if (webserver.isPrintURLResolvingTraces()) {
+                                System.out.println("Case: Not found: File not exists: is package directory: folder browsing");
+                                debugString.append("Case: Not found: File not exists: is package directory: folder browsing").append(System.lineSeparator());
+                            }
                             try {
 
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                handleFolderBrowsing();
-    }
+                                body = response.getPrintStream();
+
+                                if (!request.getMethod().equalsIgnoreCase("head")) {
+                                    handleFolderBrowsing();
+                                }
 
                             } catch (Exception ex) {
                                 debugString.append("Error generating folder browsing: " + ex.toString()).append(System.lineSeparator());
@@ -798,10 +804,10 @@ public class RequestResolver {
                         } else {
 
                             lookupPage = null;
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: is package: default page class");
-            debugString.append("Case: File not exists: is package: default page class").append(System.lineSeparator());
-            }
+                            if (webserver.isPrintURLResolvingTraces()) {
+                                System.out.println("Case: File not exists: is package: default page class");
+                                debugString.append("Case: File not exists: is package: default page class").append(System.lineSeparator());
+                            }
                             String defaultPages = this.webserver.getFileDefaultPage();
 
                             StringTokenizer defaultPageTokenizer = new StringTokenizer(defaultPages, ";");
@@ -843,10 +849,10 @@ public class RequestResolver {
 
                                 try {
                                     lookupPage = this.webserver.getClass(packageName + "." + indexPageName);
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: is package: default page class found: " + indexPageName);
-            debugString.append("Case: File not exists: is package: default page class found: " + indexPageName).append(System.lineSeparator());
-            }
+                                    if (webserver.isPrintURLResolvingTraces()) {
+                                        System.out.println("Case: File not exists: is package: default page class found: " + indexPageName);
+                                        debugString.append("Case: File not exists: is package: default page class found: " + indexPageName).append(System.lineSeparator());
+                                    }
                                     found = true;
                                     break;
                                 } catch (Exception e2) {
@@ -856,16 +862,15 @@ public class RequestResolver {
                             if (lookupPage != null) {
                                 response.setValue("Content-Type", "text/html");
 
-                                
-    body = response.getPrintStream(); 
+                                body = response.getPrintStream();
                                 Page page;
                                 try {
-                                    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                    page = (Page) lookupPage.newInstance();
-                                    page.setRessources(body, webserver, debugString);
-                                    page.handle(request, response);
-    }
+
+                                    if (!request.getMethod().equalsIgnoreCase("head")) {
+                                        page = (Page) lookupPage.newInstance();
+                                        page.setRessources(body, webserver, debugString);
+                                        page.handle(request, response);
+                                    }
                                 } catch (Exception ex) {
                                     Status status = Status.INTERNAL_SERVER_ERROR;
                                     try {
@@ -874,10 +879,10 @@ public class RequestResolver {
                                             debugString.append("\t" + element.toString()).append(System.lineSeparator());
                                         }
                                         logger.error("Error generating response:" + status.getDescription() + ": " + ex.toString());
-                                        
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                        handleDefaultPage(status, ex);
-    }
+
+                                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                                            handleDefaultPage(status, ex);
+                                        }
 
                                     } catch (Exception ex2) {
                                         debugString.append("Error generating :" + status.getDescription() + ": " + ex2.toString()).append(System.lineSeparator());
@@ -892,10 +897,10 @@ public class RequestResolver {
 
                         URL url;
                         if (this.webserver.getClassLoader().getResource(page.substring(1)) != null) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: in plugin");
-            debugString.append("Case: File not exists: in plugin").append(System.lineSeparator());
-            }
+                            if (webserver.isPrintURLResolvingTraces()) {
+                                System.out.println("Case: File not exists: in plugin");
+                                debugString.append("Case: File not exists: in plugin").append(System.lineSeparator());
+                            }
                             url = this.webserver.getClassLoader().getResource(page.substring(1));
 
                             boolean isDirectory = false;
@@ -937,22 +942,22 @@ public class RequestResolver {
                             }
 
                             if (isDirectory) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: is plugin directory");
-            debugString.append("Case: File not exists: is plugin directory").append(System.lineSeparator());
-            }
+                                if (webserver.isPrintURLResolvingTraces()) {
+                                    System.out.println("Case: File not exists: is plugin directory");
+                                    debugString.append("Case: File not exists: is plugin directory").append(System.lineSeparator());
+                                }
                                 if (this.webserver.isFileFolderBrowsingEnabled()) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: Not found: File not exists: is plugin directory: folder browsing");
-            debugString.append("Case: Not found: File not exists: is plugin directory: folder browsing").append(System.lineSeparator());
-            } 
+                                    if (webserver.isPrintURLResolvingTraces()) {
+                                        System.out.println("Case: Not found: File not exists: is plugin directory: folder browsing");
+                                        debugString.append("Case: Not found: File not exists: is plugin directory: folder browsing").append(System.lineSeparator());
+                                    }
                                     try {
 
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                        handleFolderBrowsing();
-    }
+                                        body = response.getPrintStream();
+
+                                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                                            handleFolderBrowsing();
+                                        }
 
                                     } catch (Exception ex) {
                                         debugString.append("Error generating folder browsing: " + ex.toString()).append(System.lineSeparator());
@@ -976,19 +981,19 @@ public class RequestResolver {
                                         if (this.webserver.getClassLoader().getResourceAsStream(page.substring(1) + "/" + indexPageName) != null) {
 
                                             url = this.webserver.getClassLoader().getResource(page.substring(1) + "/" + indexPageName);
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: is plugin directory: default page plugin found: " + indexPageName);
-            debugString.append("Case: File not exists: is plugin directory: default page plugin found: " + indexPageName).append(System.lineSeparator());
-            }
-                                
+                                            if (webserver.isPrintURLResolvingTraces()) {
+                                                System.out.println("Case: File not exists: is plugin directory: default page plugin found: " + indexPageName);
+                                                debugString.append("Case: File not exists: is plugin directory: default page plugin found: " + indexPageName).append(System.lineSeparator());
+                                            }
+
                                             FileInformation fileInformation = getFileInformationFromRessourceURL(url);
                                             response.setContentLength(fileInformation.getSize());
                                             response.setDate("Last-Modified", fileInformation.getLastModified());
-    body = response.getPrintStream(); 
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                            readFileRessource(url);
-    }
+                                            body = response.getPrintStream();
+
+                                            if (!request.getMethod().equalsIgnoreCase("head")) {
+                                                readFileRessource(url);
+                                            }
 
                                             found = true;
                                             break;
@@ -997,10 +1002,10 @@ public class RequestResolver {
 
                                     lookupPage = null;
                                     if (!found) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: is plugin directory: default plugin class");
-            debugString.append("Case: File not exists: is plugin directory: default plugin class").append(System.lineSeparator());
-            }
+                                        if (webserver.isPrintURLResolvingTraces()) {
+                                            System.out.println("Case: File not exists: is plugin directory: default plugin class");
+                                            debugString.append("Case: File not exists: is plugin directory: default plugin class").append(System.lineSeparator());
+                                        }
                                         defaultPageTokenizer = new StringTokenizer(defaultPages, ";");
 
                                         while (defaultPageTokenizer.hasMoreTokens()) {
@@ -1036,10 +1041,10 @@ public class RequestResolver {
                                             try {
                                                 lookupPage = this.webserver.getClass(packageName + "." + indexPageName);
 
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: is plugin directory: default plugin class found: " + indexPageName);
-            debugString.append("Case: File not exists: is plugin directory: default plugin class found: " + indexPageName).append(System.lineSeparator());
-            }
+                                                if (webserver.isPrintURLResolvingTraces()) {
+                                                    System.out.println("Case: File not exists: is plugin directory: default plugin class found: " + indexPageName);
+                                                    debugString.append("Case: File not exists: is plugin directory: default plugin class found: " + indexPageName).append(System.lineSeparator());
+                                                }
                                                 found = true;
                                                 break;
                                             } catch (Exception e1) {
@@ -1050,15 +1055,15 @@ public class RequestResolver {
                                         if (lookupPage != null) {
                                             response.setValue("Content-Type", "text/html");
 
-    body = response.getPrintStream();
+                                            body = response.getPrintStream();
                                             Page page;
                                             try {
-                                                
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                                page = (Page) lookupPage.newInstance();
-                                                page.setRessources(body, webserver, debugString);
-                                                page.handle(request, response);
-    }
+
+                                                if (!request.getMethod().equalsIgnoreCase("head")) {
+                                                    page = (Page) lookupPage.newInstance();
+                                                    page.setRessources(body, webserver, debugString);
+                                                    page.handle(request, response);
+                                                }
                                             } catch (Exception ex) {
                                                 Status status = Status.INTERNAL_SERVER_ERROR;
                                                 try {
@@ -1067,10 +1072,10 @@ public class RequestResolver {
                                                         debugString.append("\t" + element.toString()).append(System.lineSeparator());
                                                     }
                                                     logger.error("Error generating response:" + status.getDescription() + ": " + ex.toString());
-                                                    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                                    handleDefaultPage(status, ex);
-    }
+
+                                                    if (!request.getMethod().equalsIgnoreCase("head")) {
+                                                        handleDefaultPage(status, ex);
+                                                    }
 
                                                 } catch (Exception ex2) {
                                                     debugString.append("Error generating :" + status.getDescription() + ": " + ex2.toString()).append(System.lineSeparator());
@@ -1084,18 +1089,18 @@ public class RequestResolver {
                                 }
 
                                 if (!found) {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: Not found: File not exists: is package directory: default page plugin not found");
-            debugString.append("Case: Not found: File not exists: is package directory: default page plugin not found").append(System.lineSeparator());
-            }
+                                    if (webserver.isPrintURLResolvingTraces()) {
+                                        System.out.println("Case: Not found: File not exists: is package directory: default page plugin not found");
+                                        debugString.append("Case: Not found: File not exists: is package directory: default page plugin not found").append(System.lineSeparator());
+                                    }
                                     Status status = Status.NOT_FOUND;
                                     try {
-                                        
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                        handleDefaultPage(status);
-    }
+
+                                        body = response.getPrintStream();
+
+                                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                                            handleDefaultPage(status);
+                                        }
 
                                     } catch (Exception ex) {
                                         debugString.append("Error generating " + status.getDescription() + ": " + ex.toString()).append(System.lineSeparator());
@@ -1104,20 +1109,20 @@ public class RequestResolver {
                                 }
 
                             } else {
-            if(webserver.isPrintURLResolvingTraces()){
-            System.out.println("Case: File not exists: found package file");
-            debugString.append("Case: File not exists: found package file").append(System.lineSeparator());
-            }
+                                if (webserver.isPrintURLResolvingTraces()) {
+                                    System.out.println("Case: File not exists: found package file");
+                                    debugString.append("Case: File not exists: found package file").append(System.lineSeparator());
+                                }
                                 found = true;
-                                
+
                                 FileInformation fileInformation = getFileInformationFromRessourceURL(url);
                                 response.setContentLength(fileInformation.getSize());
                                 response.setDate("Last-Modified", fileInformation.getLastModified());
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                readFileRessource(url);
-    }
+                                body = response.getPrintStream();
+
+                                if (!request.getMethod().equalsIgnoreCase("head")) {
+                                    readFileRessource(url);
+                                }
                             }
                         }
                     }
@@ -1125,24 +1130,23 @@ public class RequestResolver {
 
                         lookupPage = this.webserver.getCustomResolvingClass();
                         if (lookupPage != null) {
-                            
-    body = response.getPrintStream();
+
+                            body = response.getPrintStream();
                             try {
-                                
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                Page page;
-                                page = (Page) lookupPage.newInstance();
-                                page.setRessources(body, webserver, debugString);
-                                page.handle(request, response);
-    }
+
+                                if (!request.getMethod().equalsIgnoreCase("head")) {
+                                    Page page;
+                                    page = (Page) lookupPage.newInstance();
+                                    page.setRessources(body, webserver, debugString);
+                                    page.handle(request, response);
+                                }
                             } catch (Exception e1) {
                                 Status status = Status.NOT_FOUND;
                                 try {
 
-                                    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                    handleDefaultPage(status);
-    }
+                                    if (!request.getMethod().equalsIgnoreCase("head")) {
+                                        handleDefaultPage(status);
+                                    }
 
                                 } catch (Exception ex) {
                                     debugString.append("Error generating CustomResolvingClass " + status.getDescription() + ": " + ex.toString()).append(System.lineSeparator());
@@ -1152,22 +1156,22 @@ public class RequestResolver {
                         } else {
                             Status status = Status.NOT_FOUND;
                             try {
-                                
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                                handleDefaultPage(status);
-    }
+
+                                body = response.getPrintStream();
+
+                                if (!request.getMethod().equalsIgnoreCase("head")) {
+                                    handleDefaultPage(status);
+                                }
 
                             } catch (Exception ex) {
                                 debugString.append("Error generating " + status.getDescription() + ": " + ex.toString()).append(System.lineSeparator());
                                 logger.error("Error generating " + status.getDescription() + ": " + ex.toString());
                             }
                         }
-            if(webserver.isPrintURLResolvingTraces()){            
-            System.out.println("Case: Not found in plugin");
-            debugString.append("Case: Not found in plugin").append(System.lineSeparator());
-            }
+                        if (webserver.isPrintURLResolvingTraces()) {
+                            System.out.println("Case: Not found in plugin");
+                            debugString.append("Case: Not found in plugin").append(System.lineSeparator());
+                        }
                     }
 
                 } catch (Exception ex) {
@@ -1178,12 +1182,12 @@ public class RequestResolver {
                             debugString.append("\t" + element.toString()).append(System.lineSeparator());
                         }
                         logger.error("Error generating response:" + status.getDescription() + ": " + ex.toString());
-                        
-    body = response.getPrintStream();
-    
-    if(!request.getMethod().equalsIgnoreCase("head")){
-                        handleDefaultPage(status, ex);
-    }
+
+                        body = response.getPrintStream();
+
+                        if (!request.getMethod().equalsIgnoreCase("head")) {
+                            handleDefaultPage(status, ex);
+                        }
 
                     } catch (Exception ex2) {
                         debugString.append("Error generating :" + status.getDescription() + ": " + ex2.toString()).append(System.lineSeparator());
@@ -1261,10 +1265,10 @@ public class RequestResolver {
                 this.webserver.getDefaultUtilsClass().readTextFile(request, body, url, Charset.forName("utf-8"));
 
             } else {
-            */
-                response.setValue("Content-Type", mimeType);
-                this.webserver.getDefaultUtilsClass().readBinaryFile(request, body, url);
-           // }
+             */
+            response.setValue("Content-Type", mimeType);
+            this.webserver.getDefaultUtilsClass().readBinaryFile(request, body, url);
+            // }
         } else {
             response.setValue("Content-Type", mimeType);
             this.webserver.getDefaultUtilsClass().readBinaryFile(request, body, url);
@@ -1289,10 +1293,10 @@ public class RequestResolver {
                     this.webserver.getDefaultUtilsClass().readTextFileRessource(request, body, url, this.webserver.getClassLoader(), Charset.forName("utf-8"));
 
                 } else {
-*/
-                    response.setValue("Content-Type", mimeType);
-                    this.webserver.getDefaultUtilsClass().readBinaryFileRessource(request, body, url, this.webserver.getClassLoader());
-              //  }
+                 */
+                response.setValue("Content-Type", mimeType);
+                this.webserver.getDefaultUtilsClass().readBinaryFileRessource(request, body, url, this.webserver.getClassLoader());
+                //  }
             } else {
                 Status status = Status.NOT_FOUND;
                 try {

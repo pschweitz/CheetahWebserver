@@ -66,7 +66,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
     private static Logger logger = LoggerFactory.getLogger(CheetahWebserver.class);
     public static ArrayList<String> pluginList;
 
-    public String serverName = "Cheetah WebServer/0.9";
+    public String serverName = "Cheetah WebServer/1.0";
     public String URLHTTP = "";
     public String URLWS = "";
     public String webserverName = "";
@@ -122,12 +122,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
     @Override
     public void handle(Request request, Response response) {
         logger.trace("handle Request " + request.getClass().getName());  
-        
-        /*
-        TODO:
-        set charset if put inside the configuration file, aka not blank and existing..
-        */
-        
+
         response.setContentType("text/html");
         response.setCharset(findCharset());        
         
@@ -363,7 +358,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
                 }
 
                 FILE authenticator = (FILE) authenticatorClass.newInstance();
-                authenticator.encrypt();
+                authenticator.encryptAndStore();
 
             } catch (Exception ex) {
                 logger.error("Error Encrypting passwords in FILE", ex);
@@ -1247,6 +1242,12 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         Class c = this.getClassLoader().loadClassPlugin(classname);
         return c;
     }
+
+    public Class getClassFromParentClassLoader(String classname) throws ClassNotFoundException {
+        Class c = Thread.currentThread().getContextClassLoader().loadClass(classname);
+        return c;
+    }
+
 
     public static void main(String[] args) {
 
