@@ -97,178 +97,186 @@ public class Upload extends WebSocketUploadPage {
 
         JSONObject responseJSON = new JSONObject();
 
-        String contentType = request.getContentType().toString();
+        if (!webserver.isFileUploadEnabled()) {
+            responseJSON.put("MessageType", "Error");
+            responseJSON.put("errorMessage", "Error uploading file: Insufficient privileges");
+            logger.error("Error uploading file: Insufficient privileges");
+            response.setStatus(Status.UNAUTHORIZED);
+        } else {
 
-        String boundary = contentType.substring(contentType.indexOf("boundary=") + "boundary=".length());
+            String contentType = request.getContentType().toString();
 
-        long headerLength = 0L;
+            String boundary = contentType.substring(contentType.indexOf("boundary=") + "boundary=".length());
 
-        for (Part part : request.getParts()) {
+            long headerLength = 0L;
 
-            /*
+            for (Part part : request.getParts()) {
+
+                /*
             System.out.println("boundary    :" + boundary);
             System.out.println("File getFileName    :" + part.getFileName());
             System.out.println("File getContentType :" + part.getContentType());
             System.out.println("File getName        :" + part.getName());
             System.out.println("Content-Disposition :" + part.getHeader("Content-Disposition"));
-             */
-            headerLength += boundary.length() + 3;
-            headerLength += part.getHeader("Content-Disposition").length() + 1 + "Content-Disposition: ".length();
+                 */
+                headerLength += boundary.length() + 3;
+                headerLength += part.getHeader("Content-Disposition").length() + 1 + "Content-Disposition: ".length();
 
-            ContentType partContentType = part.getContentType();
-            if (partContentType != null) {
-                String partContentTypeString = part.getContentType().toString();
-                headerLength += partContentTypeString.length() + 1 + "Content-Type: ".length();
-            }
+                ContentType partContentType = part.getContentType();
+                if (partContentType != null) {
+                    String partContentTypeString = part.getContentType().toString();
+                    headerLength += partContentTypeString.length() + 1 + "Content-Type: ".length();
+                }
 
-            InputStream is = null;
-            long totalReadbytes = 0L;
-            try {
-                if (!part.getName().equals("file")) {
+                InputStream is = null;
+                long totalReadbytes = 0L;
+                try {
+                    if (!part.getName().equals("file")) {
 
-                    is = part.getInputStream();
+                        is = part.getInputStream();
 
-                    if (is != null) {
+                        if (is != null) {
 
-                        byte[] buffer = new byte[8192];
-                        totalReadbytes = 0;
-                        int readbytes = is.read(buffer);
+                            byte[] buffer = new byte[8192];
+                            totalReadbytes = 0;
+                            int readbytes = is.read(buffer);
 
-                        while (readbytes != -1) {
-                            totalReadbytes += readbytes;
-                            readbytes = is.read(buffer);
+                            while (readbytes != -1) {
+                                totalReadbytes += readbytes;
+                                readbytes = is.read(buffer);
+                            }
+
+                            headerLength += totalReadbytes + 2;
+                        } else {
+                            headerLength += part.getContent().length() + 2;
                         }
+                    }
 
-                        headerLength += totalReadbytes + 2;
-                    } else {
-                        headerLength += part.getContent().length() + 2;
+                } catch (IOException ex) {
+                    logger.error("Error calculating part length: " + part.getFileName() + ": " + ex.toString());
+                } catch (Exception ex) {
+                    logger.error("Error calculating part length: " + part.getFileName() + ": " + ex.toString());
+                } finally {
+                    try {
+                        is.close();
+                    } catch (Exception ex) {
                     }
                 }
 
-            } catch (IOException ex) {
-                logger.error("Error calculating part length: " + part.getFileName() + ": " + ex.toString());
-            } catch (Exception ex) {
-                logger.error("Error calculating part length: " + part.getFileName() + ": " + ex.toString());
-            } finally {
-                try {
-                    is.close();
-                } catch (Exception ex) {
-                }
+                headerLength += 4;
+
             }
 
-            headerLength += 4;
+            headerLength += boundary.length() + 9;
 
-        }
+            for (Part part : request.getParts()) {
 
-        headerLength += boundary.length() + 9;
+                if (part.getName().equals("file")) {
 
-        for (Part part : request.getParts()) {
+                    String user = this.webserver.getUsername(request);
 
-            if (part.getName().equals("file")) {
+                    if (user.equals("")) {
+                        user = this.webserver.getSessionID(request);
+                    }
 
-                String user = this.webserver.getUsername(request);
+                    String agent = request.getValue("User-Agent");
 
-                if (user.equals("")) {
-                    user = this.webserver.getSessionID(request);
-                }
+                    destinationFile = destination + part.getFileName();
 
-                String agent = request.getValue("User-Agent");
+                    Path destinationPath = Paths.get(destinationFile).toAbsolutePath().normalize();
+                    Path rootPath = Paths.get(fileRoot).toAbsolutePath().normalize();
 
-                destinationFile = destination + part.getFileName();
+                    logger.debug("destinationPath: " + destinationPath);
+                    logger.debug("rootPath       : " + rootPath);
 
-                Path destinationPath = Paths.get(destinationFile).toAbsolutePath().normalize();
-                Path rootPath = Paths.get(fileRoot).toAbsolutePath().normalize();
+                    if (!destinationPath.startsWith(rootPath)) {
+                        responseJSON.put("MessageType", "Error");
+                        responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
+                        logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
+                    } else if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && !this.webserver.getUsername(request).equals("")) {
 
-                logger.debug("destinationPath: " + destinationPath);
-                logger.debug("rootPath       : " + rootPath);
+                        if (!this.webserver.isSessionAuthenticationEnabled() || (this.webserver.isSessionAuthenticationEnabled() && !this.webserver.isFileUploadAdminOnly()) || (this.webserver.isSessionAuthenticationEnabled() && this.webserver.isFileUploadAdminOnly() && this.webserver.isAdminUser(user))) {
 
-                if (!destinationPath.startsWith(rootPath)) {
-                    responseJSON.put("MessageType", "Error");
-                    responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
-                    logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
-                } else if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && !this.webserver.getUsername(request).equals("")) {
+                            if (agent != null && (agent.toLowerCase().contains("ios") || agent.toLowerCase().contains("iphone") || agent.toLowerCase().contains("ipad"))) {
 
-                    if (!this.webserver.isSessionAuthenticationEnabled() || (this.webserver.isSessionAuthenticationEnabled() && !this.webserver.isFileUploadAdminOnly()) || (this.webserver.isSessionAuthenticationEnabled() && this.webserver.isFileUploadAdminOnly() && this.webserver.isAdminUser(user))) {
+                                String pattern = "yyyyMMddhhmmssS";
+                                SimpleDateFormat format = new SimpleDateFormat(pattern);
 
-                        if (agent != null && (agent.toLowerCase().contains("ios") || agent.toLowerCase().contains("iphone") || agent.toLowerCase().contains("ipad"))) {
+                                if (destinationFile.contains(".")) {
+                                    destinationFile = destinationFile.substring(0, destinationFile.lastIndexOf('.')) + format.format(new Date()) + destinationFile.substring(destinationFile.lastIndexOf('.'), destinationFile.length());
 
-                            String pattern = "yyyyMMddhhmmssS";
-                            SimpleDateFormat format = new SimpleDateFormat(pattern);
+                                } else {
+                                    destinationFile = destinationFile + format.format(new Date());
+                                }
 
-                            if (destinationFile.contains(".")) {
-                                destinationFile = destinationFile.substring(0, destinationFile.lastIndexOf('.')) + format.format(new Date()) + destinationFile.substring(destinationFile.lastIndexOf('.'), destinationFile.length());
+                            }
+
+                            long fileSize = request.getContentLength() - headerLength;
+                            long uploadLimit = this.webserver.getFileUploadLimit();
+
+                            if (fileSize > uploadLimit) {
+                                try {
+                                    part.getInputStream().close();
+                                } catch (Exception ex) {
+                                }
+                                response.setStatus(Status.UNAUTHORIZED);
+                                responseJSON.put("MessageType", "Error");
+                                responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
+                                logger.error("Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
+
+                                errorMessage = "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)";
 
                             } else {
-                                destinationFile = destinationFile + format.format(new Date());
+
+                                UploadThread uploadThread = new UploadThread(destinationFile, fileSize, part, user, referer);
+                                uploadThread.start();
+
+                                if (noProgressBar.equals("true")) {
+                                    try {
+                                        uploadThread.join();
+                                    } catch (InterruptedException ex) {
+                                    }
+
+                                    if (uploadInformationMap.containsKey(destinationFile)) {
+
+                                        errorMessage = uploadInformationMap.get(destinationFile).errorMessage;
+
+                                        if (errorMessage == null) {
+                                            errorMessage = "";
+                                        }
+
+                                        if (!errorMessage.equals("")) {
+                                            responseJSON.put("MessageType", "Error");
+                                            responseJSON.put("errorMessage", errorMessage);
+                                            response.setStatus(Status.NOT_FOUND);
+                                        } else {
+                                            responseJSON.put("MessageType", "Success");
+                                        }
+
+                                        uploadInformationMap.remove(destinationFile);
+                                    }
+
+                                }
                             }
-
-                        }
-
-                        long fileSize = request.getContentLength() - headerLength;
-                        long uploadLimit = this.webserver.getFileUploadLimit();
-
-                        if (fileSize > uploadLimit) {
-                            try {
-                                part.getInputStream().close();
-                            } catch (Exception ex) {
-                            }
-                            response.setStatus(Status.UNAUTHORIZED);
-                            responseJSON.put("MessageType", "Error");
-                            responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
-                            logger.error("Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
-
-                            errorMessage = "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)";
-
                         } else {
-
-                            UploadThread uploadThread = new UploadThread(destinationFile, fileSize, part, user, referer);
-                            uploadThread.start();
-
-                            if (noProgressBar.equals("true")) {
-                                try {
-                                    uploadThread.join();
-                                } catch (InterruptedException ex) {
-                                }
-
-                                if (uploadInformationMap.containsKey(destinationFile)) {
-
-                                    errorMessage = uploadInformationMap.get(destinationFile).errorMessage;
-
-                                    if (errorMessage == null) {
-                                        errorMessage = "";
-                                    }
-
-                                    if (!errorMessage.equals("")) {
-                                        responseJSON.put("MessageType", "Error");
-                                        responseJSON.put("errorMessage", errorMessage);
-                                        response.setStatus(Status.NOT_FOUND);
-                                    } else {
-                                        responseJSON.put("MessageType", "Success");
-                                    }
-
-                                    uploadInformationMap.remove(destinationFile);
-                                }
-
-                            }
+                            responseJSON.put("MessageType", "Error");
+                            responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
+                            logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
                         }
                     } else {
                         responseJSON.put("MessageType", "Error");
                         responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
                         logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
                     }
-                } else {
-                    responseJSON.put("MessageType", "Error");
-                    responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
-                    logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
-                }
 
-                break;
+                    break;
+                }
             }
         }
 
         if (responseJSON.has("MessageType")) {
 
-            if (((String)responseJSON.get("MessageType")).equalsIgnoreCase("error")) {
+            if (((String) responseJSON.get("MessageType")).equalsIgnoreCase("error")) {
                 response.setValue("Content-Type", "application/json");
                 body.print(responseJSON.toString());
                 return;
@@ -303,8 +311,7 @@ public class Upload extends WebSocketUploadPage {
 
             if (!uploadInformationMap.containsKey(destinationFile)) {
                 uploadInformationMap.put(destinationFile, uploadInformation);
-            }
-            else{
+            } else {
                 uploadInformationMap.replace(destinationFile, uploadInformation);
             }
         }

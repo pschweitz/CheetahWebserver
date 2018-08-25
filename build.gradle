@@ -1,125 +1,126 @@
-apply plugin: 'java'
+plugins {
+    id 'java'
+}
 
-version = "0.9"
+group 'recordins'
+version '1.0-SNAPSHOT'
 
-sourceCompatibility = '1.8'
+//sourceCompatibility = 1.8
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
-// NetBeans will automatically add "run" and "debug" tasks relying on the
-// "mainClass" property. You may however define the property prior executing
-// tasks by passing a "-PmainClass=<QUALIFIED_CLASS_NAME>" argument.
-//
-// Note however, that you may define your own "run" and "debug" task if you
-// prefer. In this case NetBeans will not add these tasks but you may rely on
-// your own implementation.
-if (!hasProperty('mainClass')) {
-    ext.mainClass = 'org.cheetah.webserver.CheetahWebserver'
-}
 sourceSets.main.resources { srcDirs = ["src/main/java"]; exclude "**/*.java" }
+
+
+// need higher version than ide default to support java 11
+
+task wrapper(type: Wrapper) {
+    gradleVersion = "4.9"
+}
 
 repositories {
     mavenCentral()
-    // You may define additional repositories, or even remove "mavenCentral()".
-    // Read more about repositories here:
-    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:repositories
 }
 
 dependencies {
-    // TODO: Add dependencies here ...
-    // You can read more about how to add dependency here:
-    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
-    testCompile group: 'junit', name: 'junit', version: '4.10'
-        
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
     compile fileTree(dir: 'lib', include: '*.jar')
     runtime fileTree(dir: 'lib', include: '*.jar')
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = "3.5"
-}
-
-//"Main-Class": 'org.cheetah.webserver.CheetahWebserverTest'
 task packageTests(type: Jar) {
     baseName = 'CheetahWebserverTest'
     manifest {
         attributes(
-        "Created-By": 'Philippe Schweitzer',
-        "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/') + ' lib/CheetahWebserver-' + version + '.jar',
-        "Main-Class": 'org.cheetah.webserver.CheetahWebserverTest'
+                "Created-By": 'Philippe Schweitzer',
+                "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/') + ' lib/CheetahWebserver-' + version + '.jar',
+                "Main-Class": 'org.cheetah.webserver.CheetahWebserverTest'
         )
     }
     from sourceSets.test.output
 }
 
-jar {   
+jar {
     baseName = 'CheetahWebserver'
     manifest {
         attributes(
-        "Created-By": 'Philippe Schweitzer',
-        "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/'),
-        "Main-Class": 'org.cheetah.webserver.CheetahWebserver'
+                "Created-By": 'Philippe Schweitzer',
+                "Class-Path": 'lib/' + configurations.compile.collect { it.getName() }.join(' lib/'),
+                "Main-Class": 'org.cheetah.webserver.CheetahWebserver'
         )
-    }    
+    }
 }
 
+//noinspection GroovyAssignabilityCheck
 build {
     dependsOn packageTests
     /*
     def file = new File("$projectDir/lib/CheetahWebserver-" + version + '.jar')
-    
-    if(file.exists()){ 
+
+    if(file.exists()){
         delete "$projectDir/lib/CheetahWebserver-" + version + '.jar'
-    }    
+    }
     */
+
+    doLast {
+        def jarname = rootProject.name + "-" + version + ".jar"
+        delete "$projectDir/" + jarname
+
+        copy{
+            from "$buildDir/libs/" + jarname
+            into "$projectDir/"
+            //include("lib${service}.a")
+        }
+    }
 }
 
 test {
     dependsOn packageTests
-    /*    
-    print "RUN TEST\n"  
-    
-    
-    copy{      
+    /*
+    print "RUN TEST\n"
+
+
+    copy{
         from "$buildDir/libs/CheetahWebserver-" + version + '.jar'
         into "$projectDir/lib"
     }
-    
+
     def jarname = "CheetahWebserverTest" + "-" + version + ".jar"
-    
+
     def file = new File("$projectDir/" + jarname)
-    
+
     if(file.exists()){
         delete "$projectDir/" + jarname
     }
-    
-    copy{      
+
+    copy{
         from "$buildDir/libs/" + jarname
         into "$projectDir/"
     }
-            
+
     //def file = new File("$projectDir/" + jarname)
-    
-    if(file.exists()){  
-        
-        
+
+    if(file.exists()){
+
+
       //  def sout = new StringBuilder(), serr = new StringBuilder()
       //  def command = 'java -jar ' + jarname
       //  def proc = command.execute()
       //  proc.consumeProcessOutput(sout, serr)
       //  proc.waitForOrKill(1000000)
-         
-        
-        javaexec { 
+
+
+        javaexec {
             main="-jar";
             args = [
                 jarname,
-                
+
         ""
             ]
-        }  
+        }
     }
     else{
-        print "jar executable: " + jarname + " does not exist \n" 
+        print "jar executable: " + jarname + " does not exist \n"
     }
     */
 }

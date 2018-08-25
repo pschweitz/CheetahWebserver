@@ -18,8 +18,6 @@ public class CheckWebSocketSynchronizedObjectClient<RequestObject extends Serial
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(CheckWebSocketSynchronizedObjectClient.class);
 
     private Socket socket;
-    private StreamCursor cursor;
-    private FrameConsumer consumer;
 
     private String host;
     private int port;

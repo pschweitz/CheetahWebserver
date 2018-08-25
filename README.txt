@@ -35,11 +35,7 @@ The webserver implements websockets, and it is possible to write your own servic
 Finally the webserver also implements an authentication delegation mechanism. 
 
 
-The webserver is still under development, but however, its features coverage already enables it to be used in real-case scenarios.
-
 For example, just take a look at the "inslideshow" (http://www.in-slideshow.com) application to see it working within smart phones applications (both iOS and Android).
-
-There are only 2 configuration items that are not fully finished at the moment: "WebserverMode" and "WebserverOutputCharset".
 
 For the rest, I invite you to inspire yourself from the test cases for more details, as the documentation is also still under construction.
 -> Otherwise, just contact me.

@@ -111,7 +111,7 @@ public class CheetahClassLoader extends URLClassLoader {
                         CheetahWebserver.pluginList = new ArrayList();
                     }
                     CheetahWebserver.pluginList.add(jars[i].getName());
-                    logger.debug("Found plugin: '" + jars[i].getName() + "'");
+                    logger.debug("Found plugin: '" + jars[i].getName() + "' Last modified: " + jars[i].lastModified());
                     //logger.debug("Found plugin: '" + jars[i].getPath() + "' LastModified: " + new Date(jars[i].lastModified()));
 //                    System.out.println("CHEETAH jar URL '" + jars[i].getPath() + "'");
                     try {
@@ -234,11 +234,11 @@ public class CheetahClassLoader extends URLClassLoader {
     public Class<?> loadClassPlugin(String name) throws ClassNotFoundException {
         Class result = null;
 
-//    System.out.println("CHEETAH CLASSLOADER loading class '" + name + "'");
+    //System.out.println("CHEETAH CLASSLOADER loading class '" + name + "'");
         try {
 
             result = this.getParent().loadClass(name);
-//    System.out.println("CHEETAH PARENT loading class '" + name + "'");
+    //System.out.println("CHEETAH PARENT loading class '" + name + "'");
 
         } catch (ClassNotFoundException e) {
 
@@ -247,17 +247,16 @@ public class CheetahClassLoader extends URLClassLoader {
                     throw new Exception();
                 }
 
-//    System.out.println("CHEETAH findLoadedClass '" + name + "'");
+    //System.out.println("CHEETAH findLoadedClass '" + name + "'");
                 result = this.findLoadedClass(name);
                 if (result == null) {
 
-// TODO check here with cheetah example.jar                    
-//    System.out.println("CHEETAH findClass '" + name + "'");
+    //System.out.println("CHEETAH findClass '" + name + "'");
                     result = this.findClass(name);
                     if (result != null) {
-//    System.out.println("CHEETAH FOUND Class '" + name + "'");
+    //System.out.println("CHEETAH FOUND Class '" + name + "'");
                     } else {
-//    System.out.println("CHEETAH NOT FOUND Class '" + name + "'");
+    //System.out.println("CHEETAH NOT FOUND Class '" + name + "'");
                     }
 
                 }
@@ -269,17 +268,17 @@ public class CheetahClassLoader extends URLClassLoader {
                 }*/
             } catch (ClassNotFoundException ex) {
 
- //   System.out.println("CHEETAH loading class ClassNotFoundException 2 '" + name + "'");
+   //System.out.println("CHEETAH loading class ClassNotFoundException 2 '" + name + "'");
                 throw ex;
 
             } catch (NullPointerException ex) {
- //   System.out.println("CHEETAH loading class Exception NULL '" + name + "': " + ex);
+   //System.out.println("CHEETAH loading class Exception NULL '" + name + "': " + ex);
             } catch (Exception ex) {
- //   System.out.println("CHEETAH  BIG EXCEPTION '" + name + "': " + e);
+   //System.out.println("CHEETAH  BIG EXCEPTION '" + name + "': " + e);
             }
 
         } catch (Exception e) {
- //   System.out.println("CHEETAH loading class Exception '" + name + "': " + e);
+   //System.out.println("CHEETAH loading class Exception '" + name + "': " + e);
         }
         return result;
 
