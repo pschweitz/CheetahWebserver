@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.cheetah.webserver.page.javascript;
 
 import org.cheetah.webserver.Page;
@@ -11,10 +6,6 @@ import org.simpleframework.http.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- * @author aberbier
- */
 public class WebSocketURL extends Page {
 
     private static Logger logger = LoggerFactory.getLogger(WebSocketURL.class);

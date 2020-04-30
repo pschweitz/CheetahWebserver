@@ -4,30 +4,34 @@
  */
 package org.cheetah.webserver;
 
-import java.io.File;
-import java.io.FileFilter;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.StringTokenizer;
 import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @author phs
  */
 public class CheetahClassLoader extends URLClassLoader {
 
     static Logger logger = LoggerFactory.getLogger(CheetahClassLoader.class);
     static String[] classpaths = {"plugins", ".", "dist", "build/libs"};
-    //static private String[] classpaths = {"plugins"};
 
     public CheetahClassLoader(ClassLoader parent) {
         this(findJarURLsInClasspath(), parent);
@@ -36,6 +40,85 @@ public class CheetahClassLoader extends URLClassLoader {
     protected CheetahClassLoader(URL[] urls, ClassLoader parent) {
         super(urls, parent);
         super.clearAssertionStatus();
+    }
+
+    public void initPlugins() {
+
+        // load of plugins' init classes
+        String packageName = "org.cheetah.webserver.plugin";
+
+        ArrayList<String> pluginList = new ArrayList();
+
+        for (URL jarfileUrl : super.getURLs()) {
+
+            JarFile jarFile = null;
+            try {
+
+                jarFile = new JarFile(jarfileUrl.getFile());
+
+                String jarName = jarFile.getName();
+
+                if(jarName.contains("/")){
+                    jarName = jarName.substring(jarName.lastIndexOf("/")+1);
+                }
+
+                if(!pluginList.contains(jarName)) {
+                    pluginList.add(jarName);
+
+                    Enumeration<JarEntry> en = jarFile.entries();
+                    String entryName = "";
+
+                    while (en.hasMoreElements()) {
+                        JarEntry entry = en.nextElement();
+                        entryName = entry.getName();
+                        try {
+
+                            packageName = packageName.replace('.', '/');
+
+                            if (entryName != null && entryName.endsWith(".class") && entryName.startsWith(packageName) && !entryName.substring(packageName.length() + 1).contains("/")) {
+
+                                logger.debug("Init plugin from: " + jarName);
+
+                                String className = entryName.substring(packageName.length() + 1);
+                                className = packageName.replace('/', '.') + "." + className;
+                                className = className.substring(0, className.lastIndexOf("."));
+
+                                CheetahClassLoader classloader = new CheetahClassLoader(this);
+                                InputStream inputStream = jarFile.getInputStream(entry);
+                                byte[] classBytes = getBytes(inputStream);
+
+                                Class c = classloader.defineClass(className, classBytes, 0, classBytes.length);
+                                c.newInstance();
+                            }
+
+                        } catch (Exception e) {
+                            logger.error("Error loading plugin Init class '" + entryName + "': " + e.toString());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+
+            } finally {
+                try {
+                    if (jarFile != null) {
+                        jarFile.close();
+                    }
+                } catch (Exception e) {
+                }
+            }
+
+        }
+
+    }
+
+    private static byte[] getBytes(InputStream is) throws IOException {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream();) {
+            byte[] buffer = new byte[0xFFFF];
+            for (int len; (len = is.read(buffer)) != -1; )
+                os.write(buffer, 0, len);
+            os.flush();
+            return os.toByteArray();
+        }
     }
 
     public static String[] getClassPaths() {
@@ -52,8 +135,15 @@ public class CheetahClassLoader extends URLClassLoader {
         return super.getURLs();
     }
      */
-    
 
+    /*
+    public URL[] getPluginURLs() {
+
+        return super.getURLs();
+    }
+    */
+
+    /*
     public URL[] getPluginURLs() {
 
         URL[] result = getURLs();
@@ -87,6 +177,7 @@ public class CheetahClassLoader extends URLClassLoader {
 
         return result;
     }
+    */
 
     private static URL[] findJarURLsInClasspath() {
         URL url;
@@ -96,8 +187,8 @@ public class CheetahClassLoader extends URLClassLoader {
 
         for (String path : classpaths) {
 
-            File[] jars = new File(path).listFiles(new FileFilter() {
-                
+            File pathFile = new File(path);
+            File[] jars = pathFile.listFiles(new FileFilter() {
                 @Override
                 public boolean accept(File pathname) {
 
@@ -106,14 +197,22 @@ public class CheetahClassLoader extends URLClassLoader {
             });
 
             if (jars != null) {
+
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy H:mm:ss");
+
                 for (int i = 0; i < jars.length; i++) {
-                    if(CheetahWebserver.pluginList == null){
+                    if (CheetahWebserver.pluginList == null) {
                         CheetahWebserver.pluginList = new ArrayList();
                     }
-                    CheetahWebserver.pluginList.add(jars[i].getName());
-                    logger.debug("Found plugin: '" + jars[i].getName() + "' Last modified: " + jars[i].lastModified());
-                    //logger.debug("Found plugin: '" + jars[i].getPath() + "' LastModified: " + new Date(jars[i].lastModified()));
+
+                    String jarName = jars[i].getName();
+
+                    if (!CheetahWebserver.pluginList.contains(jarName)) {
+                        CheetahWebserver.pluginList.add(jarName);
+                        logger.debug("Found plugin: '" + jarName + "' Last modified (UTC): " + LocalDateTime.ofInstant(Instant.ofEpochMilli(jars[i].lastModified()), ZoneId.of("Z")).format(formatter));
 //                    System.out.println("CHEETAH jar URL '" + jars[i].getPath() + "'");
+
+                    }
                     try {
                         jarFiles.add(new JarFile(jars[i].getCanonicalPath()));
                         url = jars[i].toURI().toURL();
@@ -174,7 +273,8 @@ public class CheetahClassLoader extends URLClassLoader {
      * @param name Full class name
      * @throws java.lang.ClassNotFoundException
      */
-    @Override    public Class<?> loadClass(String name) throws ClassNotFoundException {
+    @Override
+    public Class<?> loadClass(String name) throws ClassNotFoundException {
         Class result = null;
 
 //    System.out.println("CHEETAH CLASSLOADER loading class '" + name + "'");
@@ -224,21 +324,21 @@ public class CheetahClassLoader extends URLClassLoader {
             }
 
         } catch (Exception ex) {
-                ex.printStackTrace();
+            ex.printStackTrace();
 //    System.out.println("CHEETAH loading class Exception '" + name + "': " + ex);
         }
         return result;
 
     }
-    
+
     public Class<?> loadClassPlugin(String name) throws ClassNotFoundException {
         Class result = null;
 
-    //System.out.println("CHEETAH CLASSLOADER loading class '" + name + "'");
+        //System.out.println("CHEETAH CLASSLOADER loading class '" + name + "'");
         try {
 
             result = this.getParent().loadClass(name);
-    //System.out.println("CHEETAH PARENT loading class '" + name + "'");
+            //System.out.println("CHEETAH PARENT loading class '" + name + "'");
 
         } catch (ClassNotFoundException e) {
 
@@ -247,16 +347,16 @@ public class CheetahClassLoader extends URLClassLoader {
                     throw new Exception();
                 }
 
-    //System.out.println("CHEETAH findLoadedClass '" + name + "'");
+                //System.out.println("CHEETAH findLoadedClass '" + name + "'");
                 result = this.findLoadedClass(name);
                 if (result == null) {
 
-    //System.out.println("CHEETAH findClass '" + name + "'");
+                    //System.out.println("CHEETAH findClass '" + name + "'");
                     result = this.findClass(name);
                     if (result != null) {
-    //System.out.println("CHEETAH FOUND Class '" + name + "'");
+                        //System.out.println("CHEETAH FOUND Class '" + name + "'");
                     } else {
-    //System.out.println("CHEETAH NOT FOUND Class '" + name + "'");
+                        //System.out.println("CHEETAH NOT FOUND Class '" + name + "'");
                     }
 
                 }
@@ -268,17 +368,17 @@ public class CheetahClassLoader extends URLClassLoader {
                 }*/
             } catch (ClassNotFoundException ex) {
 
-   //System.out.println("CHEETAH loading class ClassNotFoundException 2 '" + name + "'");
+                //System.out.println("CHEETAH loading class ClassNotFoundException 2 '" + name + "'");
                 throw ex;
 
             } catch (NullPointerException ex) {
-   //System.out.println("CHEETAH loading class Exception NULL '" + name + "': " + ex);
+                //System.out.println("CHEETAH loading class Exception NULL '" + name + "': " + ex);
             } catch (Exception ex) {
-   //System.out.println("CHEETAH  BIG EXCEPTION '" + name + "': " + e);
+                //System.out.println("CHEETAH  BIG EXCEPTION '" + name + "': " + e);
             }
 
         } catch (Exception e) {
-   //System.out.println("CHEETAH loading class Exception '" + name + "': " + e);
+            //System.out.println("CHEETAH loading class Exception '" + name + "': " + e);
         }
         return result;
 

@@ -17,6 +17,11 @@ public class FREE extends AbstractAuthenticator {
 
     private static Logger logger = LoggerFactory.getLogger(FREE.class);
 
+    public FREE(){
+
+        instance = this;
+    }
+
     @Override
     public boolean authenticate(Request request) {
         

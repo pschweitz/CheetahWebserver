@@ -48,25 +48,37 @@ public class FILE extends AbstractAuthenticator {
 
     private ConcurrentHashMap<String, String> properties = new ConcurrentHashMap();
 
-    private byte[] secret;
+    static byte[] secret;
 
     private String userFilename = "etc/user.properties";
 
-    int ivSize = 16;
-    int keySize = 16;
+    static int ivSize = 16;
+    static int keySize = 16;
 
     public FILE() {
 
         try {
-            java.net.InetAddress addr = java.net.InetAddress.getLocalHost();
-            secret = addr.getAddress();
+            secret = getServerUniqueFootPrint();
             secret = Arrays.copyOf(secret, keySize);
 
         } catch (Exception e) {
             secret = new byte[]{5, 4, 5, 9, 5, 1, 2, 9, 3, 1, 8, 3, 8, 6, 2, 1};
         }
 
+        int secretLength = secret.length;
+        if(secretLength>32){
+            keySize = 32;
+        }
+        else if(secretLength>24){
+            keySize = 24;
+        }
+        else{
+            keySize = 16;
+        }
+
         loadProperties();
+
+        instance = this;
     }
 
     public void encryptAndStore() {
@@ -87,7 +99,7 @@ public class FILE extends AbstractAuthenticator {
         storeProperties();
     }
 
-    private byte[] encrypt(String password) {
+    public static byte[] encrypt(String password) {
         byte[] result = {};
         try {
             byte[] byteText = password.getBytes();
@@ -127,7 +139,7 @@ public class FILE extends AbstractAuthenticator {
 
     }
 
-    private byte[] decrypt(byte[] encrypted) {
+    public static byte[] decrypt(byte[] encrypted) {
         byte[] result = {};
 
         try {
@@ -169,11 +181,14 @@ public class FILE extends AbstractAuthenticator {
         byte[] bytesOfPassword = password.getBytes();
         bytesOfPassword = Arrays.copyOf(bytesOfPassword, 64);
 
+        loadProperties();
+
         if (this.properties.containsKey(username)) {
 
             String checkedPassword = this.properties.get(username);
             if (!checkedPassword.endsWith("=")) {
                 encryptAndStore();
+                checkedPassword = this.properties.get(username);
             }
             
             checkedPassword = checkedPassword.substring(0, checkedPassword.length()-1);
@@ -197,59 +212,36 @@ public class FILE extends AbstractAuthenticator {
     public boolean setPassword(String username, String oldPassword, String newPassword) {
         boolean result = false;
 
-        if (!oldPassword.endsWith("=")) {
-
-            //    try {
-            /*
-                Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-
-                SecretKey SecKey = new SecretKeySpec(secret, "AES");
-
-                byte[] byteText = oldPassword.getBytes();
-                byteText = Arrays.copyOf(byteText, 64);
-
-                aesCipher.init(Cipher.ENCRYPT_MODE, SecKey);
-
-                byte[] byteCipherText = aesCipher.doFinal(byteText);
-             */
-            byte[] byteCipherText = encrypt(oldPassword);
-
-            byte[] encodedBytes = Base64.getEncoder().encode(byteCipherText);
-            oldPassword = new String(encodedBytes);
-            /*
-            } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-                logger.error("Unable to encrypt password", e);
-            }
-             */
-        }
-
         if (this.properties.containsKey(username)) {
-            if (this.properties.get(username).equals(oldPassword)) {
-                //    try {
-                /*
-                    Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
-                    SecretKey SecKey = new SecretKeySpec(secret, "AES");
+            byte[] bytesOfPassword = oldPassword.getBytes();
+            bytesOfPassword = Arrays.copyOf(bytesOfPassword, 64);
 
-                    byte[] byteText = newPassword.getBytes();
-                    byteText = Arrays.copyOf(byteText, 64);
-
-                    aesCipher.init(Cipher.ENCRYPT_MODE, SecKey);
-
-                    byte[] byteCipherText = aesCipher.doFinal(byteText);
-                 */
-
-                byte[] byteCipherText = encrypt(newPassword);
-
-                byte[] encodedBytes = Base64.getEncoder().encode(byteCipherText);
-                this.properties.replace(username, new String(encodedBytes));
-                storeProperties();
-                result = true;
-                /*
-                } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-                    logger.error("Unable to encrypt password", e);
-                }*/
+            String checkedPassword = this.properties.get(username);
+            if (!checkedPassword.endsWith("=")) {
+                encryptAndStore();
+                checkedPassword = this.properties.get(username);
             }
+
+            checkedPassword = checkedPassword.substring(0, checkedPassword.length()-1);
+
+            byte[] bytesOFCheckedPassword = Base64.getDecoder().decode(checkedPassword);
+
+            byte[] bytePlainText = decrypt(bytesOFCheckedPassword);
+
+            if (new String(bytesOfPassword).equals(new String(bytePlainText))) {
+                this.properties.replace(username, newPassword);
+                encryptAndStore();
+                result = true;
+            }
+            else{
+                logger.error("Error: old password does not match with '" + username + "' user password");
+            }
+        }
+        else {
+            this.properties.put(username, newPassword);
+            encryptAndStore();
+            result = true;
         }
         return result;
     }
@@ -305,16 +297,16 @@ public class FILE extends AbstractAuthenticator {
             propertiesDestination.store(output, null);
 
         } catch (FileNotFoundException e) {
-            logger.error("Error writing application properties file: \"" + userFilename + "\"", e);
+            logger.error("Error writing User properties file: \"" + userFilename + "\"", e);
 
         } catch (IOException e) {
-            logger.error("Error writing application properties file: \"" + userFilename + "\"", e);
+            logger.error("Error writing User properties file: \"" + userFilename + "\"", e);
         } finally {
             if (output != null) {
                 try {
                     output.close();
                 } catch (IOException e) {
-                    logger.error("Error closing application properties file: \"" + userFilename + "\"", e);
+                    logger.error("Error closing User properties file: \"" + userFilename + "\"", e);
                 }
             }
         }

@@ -48,32 +48,7 @@ public class PageAuthentication extends Page {
 
         String sessionCookie = "";
         boolean askAuthentication = true;
-        /*
-        String userName = "";
 
-        StringTokenizer tokenizer = new StringTokenizer(request.toString(), "\r\n");
-
-
-        while (tokenizer.hasMoreTokens()) {
-            String line = tokenizer.nextToken();
-            String[] elements = line.split(":");
-
-            //    body.println("<h1> elements[0]T: " + elements[0] + "</h1>");
-            if (elements.length > 0) {
-
-                if (elements[0].equals("User-Agent")) {
-
-                    for (int i = 1; i < elements.length; i++) {
-                        userAgent += ":" + elements[i];
-                    }
-                } else if (elements[0].equals("Authorization")) {
-                    if (line.length() > "Authorization: ".length()) {
-                        userName = elements[1].substring("Basic".length() + 2);
-                    }
-                }
-            }
-        }
-         */
         List<Cookie> cookies = request.getCookies();
 
         String message = "";
@@ -84,7 +59,7 @@ public class PageAuthentication extends Page {
                 sessionCookie = cookie.getValue();
             }
 
-            if (cookie.getName().equals("Message")) { // && this.webserver.getSessionDirectory().isExistingSession(cookie)) {
+            if (cookie.getName().equals("Message")) {
                 message = cookie.getValue();
             }
         }
@@ -153,8 +128,13 @@ public class PageAuthentication extends Page {
         } else {
             this.debugString.append("not isExistingSession: " + sessionCookie).append(System.lineSeparator());
 
-            String username = AbstractAuthenticator.getCredentials(request).getKey();
-            String password = AbstractAuthenticator.getCredentials(request).getValue();
+            logger.debug("not isExistingSession: " + sessionCookie);
+
+            String username = "";
+            String password = "";
+
+            username = AbstractAuthenticator.getCredentials(request, this.webserver.getSessionAuthenticationScheme()).getKey();
+            password = AbstractAuthenticator.getCredentials(request, this.webserver.getSessionAuthenticationScheme()).getValue();
 
             if (username.equals("")) {
                 if (request.getParameter("username") != null) {
@@ -163,25 +143,23 @@ public class PageAuthentication extends Page {
             }
 
             if (!username.equals("")) {
-                /*
-                byte[] bytesEncoded = userName.getBytes();
 
-                byte[] valueDecoded = Base64.getDecoder().decode(bytesEncoded);
-                String[] credentials = new String(valueDecoded).split(":");
+                switch(this.webserver.getSessionAuthenticationScheme()) {
 
-                if (credentials.length > 0) {
-                    username = credentials[0];
+                    case "Bearer":
+                        this.debugString.append("bearer: " + username).append(System.lineSeparator());
+                        break;
+
+                    default:
+                        this.debugString.append("username: " + username).append(System.lineSeparator());
+                        this.debugString.append("password: ********").append(System.lineSeparator());
                 }
-                if (credentials.length > 1) {
-                    password = credentials[1];
-                }
-                 */
-
-                this.debugString.append("username: " + username).append(System.lineSeparator());
-                this.debugString.append("password: ********").append(System.lineSeparator());
 
                 Class authenticatorClass = null;                
                 authenticatorClass = this.webserver.getDefaultAuthenticationClass();
+
+                debugString.append("authenticatorClass: " + authenticatorClass).append(System.lineSeparator());
+
                 
                 if (authenticatorClass == null) {
                     if (!this.webserver.getPackageAuthName().equals(this.webserver.getPackageRootName() + ".authentication")) {
@@ -200,7 +178,17 @@ public class PageAuthentication extends Page {
                         authenticatorClass = this.webserver.getClass(this.webserver.getPackageRootName() + ".authentication." + this.webserver.getSessionAuthenticationMechanism());
                     }
 
-                    IAuthenticator authenticator = (IAuthenticator) authenticatorClass.newInstance();
+                    logger.debug("Authenticator Class: " + authenticatorClass.getSimpleName());
+
+                    IAuthenticator authenticator = null;
+
+                    if(AbstractAuthenticator.isInstance()){
+                        authenticator = AbstractAuthenticator.getInstance();
+                    }
+                    else{
+                        authenticator = (IAuthenticator) authenticatorClass.newInstance();
+                    }
+
 
                     BruteForceData brutForceData = null;
                     int attempts = 0;
@@ -378,7 +366,8 @@ public class PageAuthentication extends Page {
             response.setStatus(status);
 
             if (!this.webserver.isSessionUseLoginPage()) {
-                response.setValue("WWW-Authenticate", "Basic realm=" + this.webserver.getWebserverName());
+
+                response.setValue("WWW-Authenticate", this.webserver.getSessionAuthenticationScheme() + " realm=" + this.webserver.getWebserverName());
 
                 try {
 
@@ -406,11 +395,7 @@ public class PageAuthentication extends Page {
                     } else {
 
                         try {
-                            //lookupPage = this.webserver.getClass(this.webserver.getDefaultLoginPage());
                             lookupPage = this.webserver.getDefaultLoginPageClass();
-
-                            //System.out.println("Case: File exists: is directory: default class plugin found: " + indexPageName);       
-                            //debugString.append("Case: File exists: is directory: default class plugin found: " + indexPageName).append(System.lineSeparator());
                         } catch (Exception e1) {
 
                         }
@@ -459,7 +444,6 @@ public class PageAuthentication extends Page {
     private void handleDefaultPage(Status status, Exception e, Request request, Response response) throws Exception {
 
         Class lookupPage = null;
-        //lookupPage = this.webserver.getClass(this.webserver.getDefaultPageHandler());
         lookupPage = this.webserver.getDefaultPageClass();
         AbstractPageDefault pageDefault = (AbstractPageDefault) lookupPage.newInstance();
         pageDefault.setRessources(body, webserver, debugString);

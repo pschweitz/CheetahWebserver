@@ -29,7 +29,11 @@ public class SessionDirectory {
     //private static final SessionDirectory instance = new SessionDirectory();
     private final Hashtable<String, SessionData> sessionDatas = new Hashtable();
 
+    private CheetahWebserver webserver = null;
+
     public SessionDirectory(CheetahWebserver webserver) {
+
+        this.webserver = webserver;
 
         Thread t = new Thread("SessionDirectoryClean") {
             @Override
@@ -135,7 +139,7 @@ public class SessionDirectory {
     public boolean isExistingSession(Request request) {
 
         boolean result = false;
-        String username = AbstractAuthenticator.getCredentials(request).getKey();
+        String username = AbstractAuthenticator.getCredentials(request, webserver.getSessionAuthenticationScheme()).getKey();
 
         /*
         String userName = "";

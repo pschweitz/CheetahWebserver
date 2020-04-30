@@ -420,8 +420,10 @@ public class PageDefaultFolder extends Page {
         body.println("              <th width=\"47%\">Name</th>");
         body.println("              <th width=\"28%\" >Last Modification Date</th>");
         body.println("              <th width=\"10%\">Size</th>");
-        if (this.webserver.isFileFolderBrowsingReadWrite()) {
-            body.println("              <th width=\"13%\">Action</th>");
+        if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && !this.webserver.getUsername(request).equals("")) {
+            if (this.webserver.isFileFolderBrowsingReadWrite()) {
+                body.println("              <th width=\"13%\">Action</th>");
+            }
         }
         body.println("            </tr>");
         body.println("          </thead>");

@@ -13,8 +13,9 @@ import org.simpleframework.http.Request;
  * @author phs
  */
 public interface IAuthenticator {
-    
+
     boolean authenticate(Request request);
     boolean setPassword(String username, String oldPassword, String newPassword);
     Object  getSessionObject();
+
 }

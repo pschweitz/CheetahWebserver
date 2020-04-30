@@ -97,13 +97,13 @@ public class RessourceFinder {
         }
 
         if (!webserver.isFileFolderFilesystemOnly()) {
-            logger.debug("PACKAGE: " + packagePageName + packageName);
+    //        logger.debug("PACKAGE: " + packagePageName + packageName);
 
             List<FileInformation> packages = RessourceFinder.getPackageFromPackage(packagePageName + packageName, webserver.getClassLoader());
 
             for (FileInformation packageNameInJar : packages) {
 
-                logger.debug("PACKAGE Folder: " + packageNameInJar.getName());
+    //            logger.debug("PACKAGE Folder: " + packageNameInJar.getName());
                 folderMap.put(packageNameInJar.getName(), packageNameInJar);
             }
 
@@ -117,7 +117,7 @@ public class RessourceFinder {
 
             for (FileInformation packageNameInJar : plugin) {
 
-                logger.debug("PLUGIN Folder: " + packageNameInJar.getName());
+    //            logger.debug("PLUGIN Folder: " + packageNameInJar.getName());
                 folderMap.put(packageNameInJar.getName(), packageNameInJar);
             }
 
@@ -125,7 +125,7 @@ public class RessourceFinder {
 
             for (Class c : classes) {
 
-                logger.debug("PACKAGE CLASS: " + packagePageName + packageName + "." + c.getSimpleName());
+    //            logger.debug("PACKAGE CLASS: " + packagePageName + packageName + "." + c.getSimpleName());
                 if (Page.class.isAssignableFrom(c)) {
                     FileInformation fileInformation = new FileInformation(c.getSimpleName(), 0l, 0l, true, true, false);
                     fileMap.put(fileInformation.getName(), fileInformation);
@@ -136,7 +136,7 @@ public class RessourceFinder {
 
             for (FileInformation file : files) {
 
-                logger.debug("PLUGIN FILE: " + pluginPackageName + "." + file.getName());
+    //            logger.debug("PLUGIN FILE: " + pluginPackageName + "." + file.getName());
                 fileMap.put(file.getName(), file);
             }
         }

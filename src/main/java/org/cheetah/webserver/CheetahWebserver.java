@@ -5,12 +5,14 @@
  */
 package org.cheetah.webserver;
 
+import org.cheetah.webserver.authentication.IAuthenticator;
+import org.cheetah.webserver.authentication.JWT_HS256;
 import org.cheetah.webserver.websocket.defaults.WebSocketService;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,14 +23,9 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.StringTokenizer;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.Manifest;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -59,14 +56,18 @@ import org.slf4j.LoggerFactory;
 public final class CheetahWebserver implements Container, SocketProcessor, TransportProcessor {
 
     static {
-        System.setProperty("logback.configurationFile", "etc/logback.xml");
+        if(System.getProperty("logback.configurationFile") == null) {
+            System.setProperty("logback.configurationFile", "etc/logback.xml");
+        }
         MimeType.initMimeType();
     }
 
     private static Logger logger = LoggerFactory.getLogger(CheetahWebserver.class);
+    private static CheetahWebserver instance = null;
     public static ArrayList<String> pluginList;
 
-    public String serverName = "Cheetah WebServer/1.0";
+    public String serverName = "Cheetah WebServer";
+    public String serverVersion = "1.2";
     public String URLHTTP = "";
     public String URLWS = "";
     public String webserverName = "";
@@ -105,6 +106,10 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
     
     private boolean printURLResolvingTraces = false;
 
+    public static CheetahWebserver getInstance(){
+        return instance;
+    }
+
     public Charset findCharset(){
         Charset result = null;
         
@@ -121,11 +126,11 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
     
     @Override
     public void handle(Request request, Response response) {
-        logger.trace("handle Request " + request.getClass().getName());  
+        logger.trace("handle Request " + request.getClass().getName());
 
         response.setContentType("text/html");
-        response.setCharset(findCharset());        
-        
+        response.setCharset(findCharset());
+
         RequestResolver requestExecutor = new RequestResolver(this, request, response);
         requestExecutor.execute();
     }
@@ -272,6 +277,30 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         websocketServiceList = new ConcurrentHashMap();
         webserverName = name;
 
+        webserverContext.put("WebserverMode", "Production");
+
+        try {
+            Enumeration<URL> resources = getClassLoader().getResources("META-INF/MANIFEST.MF");
+            while (resources.hasMoreElements()) {
+                URL url = resources.nextElement();
+                    Manifest manifest = new Manifest(url.openStream());
+                    if(manifest.getMainAttributes().getValue("Cheetah-Version") != null) {
+                        serverVersion = String.valueOf(manifest.getMainAttributes().getValue("Cheetah-Version"));
+                        if(serverVersion.contains("-")){
+                            serverVersion = serverVersion.substring(0, serverVersion.lastIndexOf("-"));
+                        }
+                        break;
+                    }
+            }
+        } catch (IOException E) {
+            // handle
+        }
+
+        serverName = serverName + "/" + serverVersion;
+
+        logger.debug("Starting " + serverName);
+
+
         webserverContext.put("FileDefaultPage", "index.html;default.html;index.htm;default.htm;index;default");
         webserverContext.put("FileFolderBrowsingEnabled", false);
         webserverContext.put("FileFolderBrowsingReadWrite", false);
@@ -293,14 +322,14 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         webserverContext.put("SessionAdminAccount", "admin");
         webserverContext.put("SessionAuthenticationEnabled", false);
         webserverContext.put("SessionAuthenticationMechanism", "FREE");
-        webserverContext.put("SessionEnableBruteForceProtection", true);
+        webserverContext.put("SessionAuthenticationScheme", "Basic");
+
         webserverContext.put("SessionTimeout", 30);
         webserverContext.put("SessionUseLoginPage", true);
 
         webserverContext.put("ThreadWorkerHTTP", 3);
         webserverContext.put("ThreadWorkerWebsocket", 3);
 
-        webserverContext.put("WebserverMode", "Production");
         webserverContext.put("WebserverOutputCharset", "utf-8");        
 
         webserverContext.put("WebserverName", name);
@@ -340,30 +369,60 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
             webserverVirtualHosts.loadProperties();
         }
 
-        if (this.getSessionAuthenticationMechanism().equals("FILE")) {
 
-            Class authenticatorClass = null;
-            if (!this.getPackageAuthName().equals(this.getPackageRootName() + ".authentication")) {
+        Class authenticatorClass = null;
+        if (!this.getPackageAuthName().equals(this.getPackageRootName() + ".authentication")) {
+            try {
+                authenticatorClass = Class.forName(this.getPackageAuthName() + "." + this.getSessionAuthenticationMechanism());
+
+            } catch (Exception e) {
                 try {
-                    authenticatorClass = Class.forName(this.getPackageAuthName() + "." + this.getSessionAuthenticationMechanism());
+                    authenticatorClass = this.getClassLoader().loadClass(this.getPackageAuthName() + "." + this.getSessionAuthenticationMechanism());
 
-                } catch (Exception e) {
-                    logger.warn("Warning generating Authentication Class: " + e.toString());
+                } catch (Exception e1) {
+                    logger.warn("Warning generating Authentication Class: " + e1.toString());
                 }
             }
+        }
 
+        try {
+            if (authenticatorClass == null) {
+                authenticatorClass = Class.forName(this.getPackageRootName() + ".authentication." + this.getSessionAuthenticationMechanism());
+            }
+
+        } catch (Exception ex) {
             try {
                 if (authenticatorClass == null) {
-                    authenticatorClass = Class.forName(this.getPackageRootName() + ".authentication." + this.getSessionAuthenticationMechanism());
+                    authenticatorClass = this.getClassLoader().loadClass(this.getPackageRootName() + ".authentication." + this.getSessionAuthenticationMechanism());
                 }
+
+            } catch (Exception ex1) {
+                logger.error("Error generating Authentication Class: " + ex1.toString());
+            }
+        }
+
+
+        try {
+            if(FILE.class.isAssignableFrom(authenticatorClass)){
 
                 FILE authenticator = (FILE) authenticatorClass.newInstance();
                 authenticator.encryptAndStore();
 
-            } catch (Exception ex) {
-                logger.error("Error Encrypting passwords in FILE", ex);
             }
+            else if(JWT_HS256.class.isAssignableFrom(authenticatorClass)){
+
+                JWT_HS256 authenticator = (JWT_HS256) authenticatorClass.newInstance();
+                authenticator.encryptAndStore();
+
+            }
+
+            this.setDefaultAuthenticationClass(authenticatorClass);
+
+        } catch (Exception ex) {
+            logger.error("Error encrypting file for authentication Class '" + authenticatorClass.getSimpleName() + "': " + ex.toString());
         }
+
+
 
         populateAuthorizationFolder();
     }
@@ -494,6 +553,58 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
                     String keystoreLocation = propertiesSource.getProperty("keystore");
                     String keystorePassword = propertiesSource.getProperty("password");
 
+                    /* encryption */
+                    if (!keystorePassword.endsWith("=")) {
+
+                        byte[] encrypted = FILE.encrypt(keystorePassword);
+
+                        byte[] encodedBytes = Base64.getEncoder().encode(encrypted);
+                        propertiesSource.replace("password", new String(encodedBytes) + "=");
+
+                        /* storage */
+
+                        Properties propertiesDestination = new Properties();
+                        OutputStream output = null;
+
+                        try {
+                            output = new FileOutputStream(sslPropertiesFile);
+
+                            logger.trace("SSL keystore password store");
+
+                            for (Object key : propertiesSource.keySet()) {
+                                //logger.debug("property[\"" + key + "\"] = " + this.properties.get(key));
+
+                                propertiesDestination.put(key, propertiesSource.get(key));
+                            }
+
+                            propertiesDestination.store(output, null);
+
+                        } catch (FileNotFoundException e) {
+                            logger.error("Error writing SSL keystore password file: \"" + sslPropertiesFile + "\"", e);
+
+                        } catch (IOException e) {
+                            logger.error("Error writing SSL keystore password file: \"" + sslPropertiesFile + "\"", e);
+                        } finally {
+                            if (output != null) {
+                                try {
+                                    output.close();
+                                } catch (IOException e) {
+                                    logger.error("Error closing SSL keystore password file: \"" + sslPropertiesFile + "\"", e);
+                                }
+                            }
+                        }
+                    }
+                    else{
+
+                        keystorePassword = keystorePassword.substring(0, keystorePassword.length()-1);
+                        byte[] bytesOFCheckedPassword = Base64.getDecoder().decode(keystorePassword);
+                        byte[] bytePlainText = FILE.decrypt(bytesOFCheckedPassword);
+                        keystorePassword = new String(bytePlainText);
+                        keystorePassword = keystorePassword.trim();
+                    }
+
+                    logger.warn("KeyStore password: " + keystorePassword);
+
                     char ksPass[] = keystorePassword.toCharArray();
                     char ctPass[] = keystorePassword.toCharArray();
                     KeyStore ks = KeyStore.getInstance("JKS");
@@ -555,6 +666,9 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
                 }
             }
 
+            instance = this;
+            instance.getClassLoader().initPlugins();
+
         } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException | KeyManagementException e) {
             logger.error("Webserver initialization failed", e);
         }
@@ -577,39 +691,8 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
 
         if (user.equals("")) {
             if (sessionDirectory.isExistingSession(request)) {
-                user = AbstractAuthenticator.getCredentials(request).getKey();
-                /*
+                user = AbstractAuthenticator.getCredentials(request, this.getSessionAuthenticationScheme()).getKey();
 
-                String userName = "";
-                StringTokenizer tokenizer = new StringTokenizer(request.toString(), "\r\n");
-                while (tokenizer.hasMoreTokens()) {
-                    String line = tokenizer.nextToken();
-                    String[] elements = line.split(":");
-
-                    if (elements.length > 0) {
-
-                        if (elements[0].equals("Authorization")) {
-                            if (line.length() > "Authorization: ".length()) {
-                                userName = elements[1].substring("Basic".length() + 2);
-                            }
-
-                            break;
-                        }
-                    }
-                }
-
-                if (!userName.equals("")) {
-
-                    byte[] bytesEncoded = userName.getBytes();
-
-                    byte[] valueDecoded = Base64.getDecoder().decode(bytesEncoded);
-                    String[] credentials = new String(valueDecoded).split(":");
-
-                    if (credentials.length > 0) {
-                        user = credentials[0];
-                    }
-                }
-                 */
             }
         }
 
@@ -655,13 +738,6 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
                 break;
             }
         }
-        /*
-        if (sessionID.equals("")) {
-            if (sessionDirectory.isExistingSession(request)) {
-                String username = AbstractAuthenticator.getCredentials(request).getKey();
-                sessionID = sessionDirectory.getCookie(username);                
-            }
-        }*/
 
         return sessionID;
     }
@@ -694,7 +770,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
 
         if (sessionObject == null) {
             if (sessionDirectory.isExistingSession(request)) {
-                String username = AbstractAuthenticator.getCredentials(request).getKey();
+                String username = AbstractAuthenticator.getCredentials(request, this.getSessionAuthenticationScheme()).getKey();
                 sessionObject = sessionDirectory.getSessionData(sessionDirectory.getCookie(username)).getSessionObject();
 
             }
@@ -787,7 +863,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
             
             for(String username: webSocketService.getUsers().values()){
                 result.add(username);
-            }            
+            }
             
         }
         
@@ -804,7 +880,6 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
             // logger.warn("WebSocket Service \"" + serviceClassName + "\" not found");
         }
     }
-    
 
     // allows cascade sending of frames if in distribute(String) of webssocket service, it forwards to another websocket.
     public void distributeToWebsocketServiceMessage(String serviceClassName, String message, String user) {
@@ -1035,7 +1110,7 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         return webserverContext.getString("SessionAdminAccount");
     }
 
-    public void setSessionAdminAccount1(String sessionAdminAccount) {
+    public void setSessionAdminAccount(String sessionAdminAccount) {
         webserverContext.put("SessionAdminAccount", sessionAdminAccount);
     }
 
@@ -1053,6 +1128,14 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
 
     public void setSessionAuthenticationMechanism(String sessionAuthenticationMechanism) {
         webserverContext.put("SessionAuthenticationMechanism", sessionAuthenticationMechanism);
+    }
+
+    public String getSessionAuthenticationScheme() {
+        return webserverContext.getString("SessionAuthenticationScheme");
+    }
+
+    public void setSessionAuthenticationScheme(String sessionAuthenticationScheme) {
+        webserverContext.put("SessionAuthenticationScheme", sessionAuthenticationScheme);
     }
 
     public boolean isSessionEnableBruteForceProtection() {
@@ -1150,6 +1233,8 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
         if (!this.getWebserverMode().equals("Development")) {
             return classLoader;
         } else {
+
+            System.out.println("getClassLoader");
             classLoader = new CheetahClassLoader(Thread.currentThread().getContextClassLoader());
             return classLoader;
         }
@@ -1265,16 +1350,14 @@ public final class CheetahWebserver implements Container, SocketProcessor, Trans
             }
         }
 
-        CheetahWebserver webserver = null;
-
         if (configurationFilePath != null) {
-            webserver = new CheetahWebserver(configurationFilePath);
+            instance = new CheetahWebserver(configurationFilePath);
         } else {
-            webserver = new CheetahWebserver();
+            instance = new CheetahWebserver();
         }
-        if (webserver != null) {
-            webserver.printProperties();
-            webserver.setPrintURLResolvingTraces(false);
+        if (instance != null) {
+            instance.printProperties();
+            instance.setPrintURLResolvingTraces(false);
         }
     }
 

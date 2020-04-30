@@ -28,10 +28,10 @@ public class Favicon extends Page {
     @Override
     public void handle(Request request, Response response) {
 
-        response.setValue("Content-Type", "image/jpeg");
+        response.setValue("Content-Type", "image/png");
 
         try {
-            URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/favicon.jpg");
+            URL url = this.webserver.getClassLoader().getResource("org/cheetah/webserver/resources/favicon.png");
 
             //logger.debug("url: " + url.toString());
 

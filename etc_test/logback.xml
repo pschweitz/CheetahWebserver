@@ -6,16 +6,18 @@
 
     <!-- standard appender for console-->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+
+        <withJansi>true</withJansi>
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">      
             <evaluator> 
-                <expression>return logger.contains("AccessLog");</expression>
+                <expression>return logger.contains("AccessLog") || logger.contains("oshi");</expression>
             </evaluator>
             <OnMismatch>NEUTRAL</OnMismatch>
             <OnMatch>DENY</OnMatch>
         </filter>
         
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%-30(%d{HH:mm:ss.SSS} [%thread]) %highlight(%-5level) %logger{36} - %msg%n</pattern>
         </encoder>
 
     </appender>    
@@ -32,7 +34,7 @@
         <file>log/cheetah.log</file>
 
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%-30(%d{HH:mm:ss.SSS} [%thread]) %highlight(%-5level) %logger{36} - %msg%n</pattern>
         </encoder>
         
 

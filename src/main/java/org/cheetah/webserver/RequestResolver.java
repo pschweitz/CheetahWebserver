@@ -113,12 +113,8 @@ public class RequestResolver {
                         this.debugString.append(":" + elements[i]);
                     }
                 }
+
                 debugString.append(System.lineSeparator());
-            }
-
-            if (elements[0].equals("Cookie")) {
-                //  debugString.append("Cookie elements :" + elements.length).append(System.lineSeparator());
-
             }
         }
 
@@ -141,11 +137,6 @@ public class RequestResolver {
             page = directory;
         }
 
-        /*
-        if (page.contains("?")) {
-            page = request.getTarget().split("\\?")[0];
-        }
-         */
         if (!page.equals("/")) {
             while (page.endsWith("/")) {
                 page = page.substring(0, page.length() - 1);
@@ -176,8 +167,8 @@ public class RequestResolver {
 
         Path targetPath = Paths.get(target);
 
-        //       debugString.append("targetPath: " + targetPath).append(System.lineSeparator());
         long time = System.currentTimeMillis();
+        response.setValue("Access-Control-Allow-Origin", "*");
         response.setValue("Server", this.webserver.serverName);
         response.setDate("Date", time);
         response.setDate("Last-Modified", time);
@@ -224,6 +215,8 @@ public class RequestResolver {
 
         boolean authFolder = true;
 
+        debugString.append("authenabled: " + webserver.isSessionAuthenticationEnabled()).append(System.lineSeparator());
+
         if (webserver.isSessionAuthenticationEnabled() || page.equals("/admin/Login")) {
 
             for (String key : this.webserver.getAuthorizationFolder().keySet()) {
@@ -267,7 +260,6 @@ public class RequestResolver {
 
         try {
 
-            //     body = response.getPrintStream();
             if (Files.exists(targetPath)) {
 
                 if (webserver.isPrintURLResolvingTraces()) {
@@ -387,10 +379,6 @@ public class RequestResolver {
                                     indexPageName = indexPageName.substring(0, indexPageName.indexOf("."));
                                 }
 
-                                //System.out.println("packagePageName + \".\" + packageName + \".\" + indexPageName"); 
-                                //System.out.println(packagePageName + "." + packageName + "." + indexPageName); 
-                                //System.out.println(packageName); 
-                                //System.out.println(indexPageName); 
                                 try {
                                     if (!packageName.equals("")) {
                                         lookupPage = this.webserver.getClass(packagePageName + "." + packageName + "." + indexPageName);
@@ -683,30 +671,28 @@ public class RequestResolver {
                 Class lookupPage = null;
                 try {
 
-                    //System.out.println("packagePageName + \".\" + pageName");
-                    //System.out.println(packagePageName + "." + pageName);
                     ConcurrentHashMap staticPages = this.webserver.getStaticPageMap();
 
                     if (staticPages != null) {
                         for (Map.Entry<String, Class<? extends Page>> entry : (Set<Map.Entry<String, Class<? extends Page>>>) staticPages.entrySet()) {
-                            if (page.equals(entry.getKey())) {
+
+                            String tempPage = "";
+
+                            if (name != null) {
+                                tempPage = directory + name;
+                            } else {
+                                tempPage = directory;
+                            }
+
+                            if (tempPage.equals(entry.getKey())) {
                                 lookupPage = entry.getValue();
+                                break;
+                            }
+                            else if(tempPage.substring(0, tempPage.lastIndexOf("/")+1).equals(entry.getKey())){
+                                lookupPage = entry.getValue();
+                                break;
                             }
                         }
-                        /*
-                        if (page.equals("/javascript/WebSocketURL")) {
-                            lookupPage = WebSocketURL.class;
-
-                        } else if (page.equals("/ressources/FolderWebSocket")) {
-                            lookupPage = FolderWebSocket.class;
-
-                        } else if (page.equals("/Json")) {
-                            lookupPage = this.webserver.getJsonPageClass();
-
-                        } else {
-                            lookupPage = this.webserver.getClass(packagePageName + "." + pageName);
-                        }
-                         */
                     }
 
                     if (lookupPage == null) {
@@ -742,8 +728,6 @@ public class RequestResolver {
                         } else {
                             Status status = Status.BAD_REQUEST;
                             try {
-
-                                //body = response.getPrintStream(); 
                                 if (!request.getMethod().equalsIgnoreCase("head")) {
                                     handleDefaultPage(status);
                                 }
@@ -759,7 +743,6 @@ public class RequestResolver {
                         Status status = Status.BAD_REQUEST;
                         try {
 
-                            //body = response.getPrintStream(); 
                             if (!request.getMethod().equalsIgnoreCase("head")) {
                                 handleDefaultPage(status);
                             }
@@ -927,8 +910,6 @@ public class RequestResolver {
                                     JarEntry file = (JarEntry) enumEntries.nextElement();
 
                                     if (file.getName().substring(0, file.getName().length() - 1).equals(entryName)) {
-
-                                        logger.debug("Entry: " + file.getName() + ": " + file.isDirectory());
                                         isDirectory = true;
                                         break;
                                     }
@@ -1125,6 +1106,40 @@ public class RequestResolver {
                                 }
                             }
                         }
+                        else if(page.equals("/")){
+
+                            String defaultPages = this.webserver.getFileDefaultPage();
+
+                            StringTokenizer defaultPageTokenizer = new StringTokenizer(defaultPages, ";");
+
+                            defaultPageTokenizer = new StringTokenizer(defaultPages, ";");
+                            while (defaultPageTokenizer.hasMoreTokens()) {
+
+                                String indexPageName = defaultPageTokenizer.nextToken();
+
+                                if (this.webserver.getClassLoader().getResourceAsStream(indexPageName) != null) {
+
+                                    url = this.webserver.getClassLoader().getResource(indexPageName);
+                                    if (webserver.isPrintURLResolvingTraces()) {
+                                        System.out.println("Case: File not exists: is plugin directory: root default page plugin found: " + indexPageName);
+                                        debugString.append("Case: File not exists: is plugin directory: root default page plugin found: " + indexPageName).append(System.lineSeparator());
+                                    }
+
+                                    FileInformation fileInformation = getFileInformationFromRessourceURL(url);
+                                    response.setContentLength(fileInformation.getSize());
+                                    response.setDate("Last-Modified", fileInformation.getLastModified());
+                                    body = response.getPrintStream();
+
+                                    if (!request.getMethod().equalsIgnoreCase("head")) {
+                                        readFileRessource(url);
+                                    }
+
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                        }
                     }
                     if (!found) {
 
@@ -1218,7 +1233,6 @@ public class RequestResolver {
     private void handleDefaultPage(Status status, Exception e) throws Exception {
 
         Class lookupPage = null;
-        //lookupPage = this.webserver.getClass(this.webserver.getDefaultPageHandler());
         lookupPage = this.webserver.getDefaultPageClass();
         AbstractPageDefault pageDefault = (AbstractPageDefault) lookupPage.newInstance();
         pageDefault.setRessources(body, webserver, debugString);
@@ -1231,7 +1245,6 @@ public class RequestResolver {
     private void handleDefaultPage(Status status) throws Exception {
 
         Class lookupPage = null;
-        //lookupPage = this.webserver.getClass(this.webserver.getDefaultPageHandler());
         lookupPage = this.webserver.getDefaultPageClass();
         AbstractPageDefault pageDefault = (AbstractPageDefault) lookupPage.newInstance();
         pageDefault.setRessources(body, webserver, debugString);
@@ -1243,7 +1256,6 @@ public class RequestResolver {
     private void handleFolderBrowsing() throws Exception {
 
         Class lookupPage = null;
-        //lookupPage = this.webserver.getClass(this.webserver.getDefaultFolderBrowsingPageHandler());
         lookupPage = this.webserver.getDefaultFolderBrowsingPageClass();
         Page pageDefault = (Page) lookupPage.newInstance();
         pageDefault.setRessources(body, webserver, debugString);
@@ -1259,13 +1271,6 @@ public class RequestResolver {
             String extention = url.toString().substring(extentionIndex + 1);
             mimeType = MimeType.getMimeType(extention);
 
-            /*
-            if (MimeType.isText(extention)) {
-                response.setValue("Content-Type", mimeType);
-                this.webserver.getDefaultUtilsClass().readTextFile(request, body, url, Charset.forName("utf-8"));
-
-            } else {
-             */
             response.setValue("Content-Type", mimeType);
             this.webserver.getDefaultUtilsClass().readBinaryFile(request, body, url);
             // }
@@ -1287,13 +1292,6 @@ public class RequestResolver {
             if (!extention.equals("class")) {
                 mimeType = MimeType.getMimeType(extention);
 
-                /*
-                if (MimeType.isText(extention)) {
-                    response.setValue("Content-Type", mimeType);
-                    this.webserver.getDefaultUtilsClass().readTextFileRessource(request, body, url, this.webserver.getClassLoader(), Charset.forName("utf-8"));
-
-                } else {
-                 */
                 response.setValue("Content-Type", mimeType);
                 this.webserver.getDefaultUtilsClass().readBinaryFileRessource(request, body, url, this.webserver.getClassLoader());
                 //  }

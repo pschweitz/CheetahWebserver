@@ -47,6 +47,7 @@ body {
     border: 2px solid;
     border-color: #293133;
     padding: 10px;
+    word-wrap: break-word;
 }
 
 th{    

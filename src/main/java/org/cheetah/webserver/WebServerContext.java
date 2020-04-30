@@ -63,6 +63,7 @@ public final class WebServerContext<K, V> {
         SessionAdminAccount("SessionAdminAccount", String.class, false),
         SessionAuthenticationEnabled("SessionAuthenticationEnabled", Boolean.class, false),
         SessionAuthenticationMechanism("SessionAuthenticationMechanism", String.class, false),
+        SessionAuthenticationScheme("SessionAuthenticationScheme", String.class, false),
         SessionEnableBruteForceProtection("SessionEnableBruteForceProtection", Boolean.class, false),
         SessionTimeout("SessionTimeout", Integer.class, false),
         SessionUseLoginPage("SessionUseLoginPage", Boolean.class, false),

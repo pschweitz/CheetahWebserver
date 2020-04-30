@@ -73,7 +73,12 @@ public class ChangePassword extends Page {
                     authenticatorClass = Class.forName(this.webserver.getPackageAuthName() + "." + this.webserver.getSessionAuthenticationMechanism());
 
                 } catch (Exception e) {
-                    logger.warn("Warning generating Authentication Class: " + e.toString());
+                    try {
+                        authenticatorClass = this.webserver.getClassLoader().loadClass(this.webserver.getPackageAuthName() + "." + this.webserver.getSessionAuthenticationMechanism());
+
+                    } catch (Exception e1) {
+                        logger.warn("Warning generating Authentication Class: " + e1.toString());
+                    }
                 }
             }
 
@@ -87,8 +92,19 @@ public class ChangePassword extends Page {
                 result = authenticator.setPassword(username, oldPassword, newPassword);
 
             } catch (Exception ex) {
-                logger.error("Error generating Authentication Class", ex);
-                body.close();
+                try {
+                    if (authenticatorClass == null) {
+                        authenticatorClass = this.webserver.getClassLoader().loadClass(this.webserver.getPackageRootName() + ".authentication." + this.webserver.getSessionAuthenticationMechanism());
+                    }
+
+                    IAuthenticator authenticator = (IAuthenticator) authenticatorClass.newInstance();
+
+                    result = authenticator.setPassword(username, oldPassword, newPassword);
+
+                } catch (Exception ex1) {
+                    logger.error("Error generating Authentication Class: " + ex1.toString());
+                    body.close();
+                }
             }
 
             if (!result) {

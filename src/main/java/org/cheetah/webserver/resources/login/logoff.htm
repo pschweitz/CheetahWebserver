@@ -12,7 +12,10 @@
                 if (xhr.readyState === XMLHttpRequest.DONE) {
                     var referer = document.referrer;
                         //location.reload();
-                        window.location = referer;
+                        //if(referer !== "" && referer !== "undefined") {
+                            window.location = referer;
+                        //    location.reload();
+                        //}
                 }
             };
             xhr.open("GET", "/admin/Logoff", false);

@@ -22,8 +22,10 @@ public class PageDefault extends AbstractPageDefault {
         String mimeType = MimeType.getMimeType("html");
         response.setValue("Content-Type", mimeType);
 
+        body.println("<!DOCTYPE html>");
         body.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/Cheetah\">");
 
+        body.println("<body>");
         body.println("<div id=\"page\" class=\"page-class\">");
         body.println("  <table id=\"cheetahTable\">");
         body.println("    <tr>");
@@ -60,5 +62,8 @@ public class PageDefault extends AbstractPageDefault {
         }
 
         body.println("</div>");
+
+        body.println("</body>");
+        body.println("</html>");
     }
 }

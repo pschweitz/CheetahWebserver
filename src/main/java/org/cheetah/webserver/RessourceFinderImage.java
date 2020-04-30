@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RessourceFinderImage {
 
+    /*
     private static Logger logger = LoggerFactory.getLogger(RessourceFinderImage.class);
 
     //   public static FileInformation[] listRessources(String packagePageName, String packageName, Path folderRoot, String target, String page, CheetahWebserver webserver, Request request) {
@@ -300,7 +301,7 @@ public class RessourceFinderImage {
      * @param result
      * @param classes
      * @param jarPath
-     */
+     *
     private static void getClassesInSamePackageFromJar(List<Class<?>> result, String packageName, String jarPath, CheetahClassLoader cl) {
         logger.trace("START: getClassesInSamePackageFromJar(List, String, String, URLClassLoader)");
 
@@ -578,4 +579,5 @@ public class RessourceFinderImage {
 
         return authFolder;
     }
+    */
 }

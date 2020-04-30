@@ -49,6 +49,8 @@ public class MimeType {
                 fstream = new FileInputStream(Paths.get("etc/mime.types").toFile());
                 is = new InputStreamReader(fstream, Charset.forName("utf-8"));
             } else {
+
+                System.out.println("MIME");
                 CheetahClassLoader classLoader = new CheetahClassLoader(Thread.currentThread().getContextClassLoader());
                 is = new InputStreamReader(classLoader.getResourceAsStream("org/cheetah/webserver/resources/mime.types"), Charset.forName("utf-8"));
             }

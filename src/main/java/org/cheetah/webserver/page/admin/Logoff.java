@@ -35,7 +35,7 @@ public class Logoff extends Page {
 
         try {
             response.setValue("Content-Type", "text/html");
-            response.setValue("WWW-Authenticate", "Basic realm=" + this.webserver.getWebserverName());
+            response.setValue("WWW-Authenticate", this.webserver.getSessionAuthenticationScheme() + " realm=" + this.webserver.getWebserverName());
 
             Cookie newCookie = new Cookie("Message", "");
             newCookie.setExpiry(0);

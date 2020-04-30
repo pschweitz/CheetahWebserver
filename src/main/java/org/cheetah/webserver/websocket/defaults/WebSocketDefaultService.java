@@ -99,7 +99,6 @@ public class WebSocketDefaultService extends WebSocketService {
 
                 try {
                     logger.debug("Websocket send to: " + user);
-
                     operation.send(frame);
                 } catch (Exception e) {
 
@@ -140,7 +139,27 @@ public class WebSocketDefaultService extends WebSocketService {
                     try {
 
                         logger.debug("Websocket send to: " + user);
+                        operation.send(frame);
+                    } catch (Exception e) {
 
+                        logger.error("Error to send to websocket: " + user, e);
+
+                        sockets.remove(user);
+                        users.remove(user);
+                        try {
+                            operation.close();
+                        } catch (Exception e1) {
+                        }
+                    }
+                }
+
+                if (destinationUser.equals(this.webserver.getSessionDirectory().getCookie(user))) {
+
+                    FrameChannel operation = sockets.get(secWebSocketKey);
+
+                    try {
+
+                        logger.debug("Websocket send to: " + user);
                         operation.send(frame);
                     } catch (Exception e) {
 

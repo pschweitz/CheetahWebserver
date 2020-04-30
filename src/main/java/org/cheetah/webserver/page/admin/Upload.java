@@ -181,92 +181,104 @@ public class Upload extends WebSocketUploadPage {
 
                     String agent = request.getValue("User-Agent");
 
-                    destinationFile = destination + part.getFileName();
+                    if (part.getFileName() != null) {
 
-                    Path destinationPath = Paths.get(destinationFile).toAbsolutePath().normalize();
-                    Path rootPath = Paths.get(fileRoot).toAbsolutePath().normalize();
 
-                    logger.debug("destinationPath: " + destinationPath);
-                    logger.debug("rootPath       : " + rootPath);
+                        destinationFile = destination + part.getFileName();
 
-                    if (!destinationPath.startsWith(rootPath)) {
-                        responseJSON.put("MessageType", "Error");
-                        responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
-                        logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
-                    } else if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && !this.webserver.getUsername(request).equals("")) {
+                        Path destinationPath = Paths.get(destinationFile).toAbsolutePath().normalize();
+                        Path rootPath = Paths.get(fileRoot).toAbsolutePath().normalize();
 
-                        if (!this.webserver.isSessionAuthenticationEnabled() || (this.webserver.isSessionAuthenticationEnabled() && !this.webserver.isFileUploadAdminOnly()) || (this.webserver.isSessionAuthenticationEnabled() && this.webserver.isFileUploadAdminOnly() && this.webserver.isAdminUser(user))) {
+                        logger.debug("destinationPath: " + destinationPath);
+                        logger.debug("rootPath       : " + rootPath);
 
-                            if (agent != null && (agent.toLowerCase().contains("ios") || agent.toLowerCase().contains("iphone") || agent.toLowerCase().contains("ipad"))) {
+                        if (!destinationPath.startsWith(rootPath)) {
+                            responseJSON.put("MessageType", "Error");
+                            responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
+                            logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
+                        } else if (!this.webserver.isSessionAuthenticationEnabled() || this.webserver.isSessionAuthenticationEnabled() && !this.webserver.getUsername(request).equals("")) {
 
-                                String pattern = "yyyyMMddhhmmssS";
-                                SimpleDateFormat format = new SimpleDateFormat(pattern);
+                            if (!this.webserver.isSessionAuthenticationEnabled() || (this.webserver.isSessionAuthenticationEnabled() && !this.webserver.isFileUploadAdminOnly()) || (this.webserver.isSessionAuthenticationEnabled() && this.webserver.isFileUploadAdminOnly() && this.webserver.isAdminUser(user))) {
 
-                                if (destinationFile.contains(".")) {
-                                    destinationFile = destinationFile.substring(0, destinationFile.lastIndexOf('.')) + format.format(new Date()) + destinationFile.substring(destinationFile.lastIndexOf('.'), destinationFile.length());
+                                if (agent != null && (agent.toLowerCase().contains("ios") || agent.toLowerCase().contains("iphone") || agent.toLowerCase().contains("ipad"))) {
+
+                                    String pattern = "yyyyMMddhhmmssS";
+                                    SimpleDateFormat format = new SimpleDateFormat(pattern);
+
+                                    if (destinationFile.contains(".")) {
+                                        destinationFile = destinationFile.substring(0, destinationFile.lastIndexOf('.')) + format.format(new Date()) + destinationFile.substring(destinationFile.lastIndexOf('.'), destinationFile.length());
+
+                                    } else {
+                                        destinationFile = destinationFile + format.format(new Date());
+                                    }
+
+                                }
+
+                                long fileSize = request.getContentLength() - headerLength;
+                                long uploadLimit = this.webserver.getFileUploadLimit();
+
+                                if (fileSize > uploadLimit) {
+                                    try {
+                                        part.getInputStream().close();
+                                    } catch (Exception ex) {
+                                    }
+                                    response.setStatus(Status.UNAUTHORIZED);
+                                    responseJSON.put("MessageType", "Error");
+                                    responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
+                                    logger.error("Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
+
+                                    errorMessage = "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)";
 
                                 } else {
-                                    destinationFile = destinationFile + format.format(new Date());
+
+                                    UploadThread uploadThread = new UploadThread(destinationFile, fileSize, part, user, referer);
+                                    uploadThread.start();
+
+                                    if (noProgressBar.equals("true")) {
+                                        try {
+                                            uploadThread.join();
+                                        } catch (InterruptedException ex) {
+                                        }
+
+                                        if (uploadInformationMap.containsKey(destinationFile)) {
+
+                                            errorMessage = uploadInformationMap.get(destinationFile).errorMessage;
+
+                                            if (errorMessage == null) {
+                                                errorMessage = "";
+                                            }
+
+                                            if (!errorMessage.equals("")) {
+                                                responseJSON.put("MessageType", "Error");
+                                                responseJSON.put("errorMessage", errorMessage);
+                                                response.setStatus(Status.NOT_FOUND);
+                                            } else {
+                                                responseJSON.put("MessageType", "Success");
+                                            }
+
+                                            uploadInformationMap.remove(destinationFile);
+                                        }
+
+                                    }
                                 }
-
-                            }
-
-                            long fileSize = request.getContentLength() - headerLength;
-                            long uploadLimit = this.webserver.getFileUploadLimit();
-
-                            if (fileSize > uploadLimit) {
-                                try {
-                                    part.getInputStream().close();
-                                } catch (Exception ex) {
-                                }
+                            } else {
                                 response.setStatus(Status.UNAUTHORIZED);
                                 responseJSON.put("MessageType", "Error");
-                                responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
-                                logger.error("Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)");
-
-                                errorMessage = "Error uploading file: " + part.getFileName() + ": File size exeeds upload limit: " + uploadLimit + " (B)";
-
-                            } else {
-
-                                UploadThread uploadThread = new UploadThread(destinationFile, fileSize, part, user, referer);
-                                uploadThread.start();
-
-                                if (noProgressBar.equals("true")) {
-                                    try {
-                                        uploadThread.join();
-                                    } catch (InterruptedException ex) {
-                                    }
-
-                                    if (uploadInformationMap.containsKey(destinationFile)) {
-
-                                        errorMessage = uploadInformationMap.get(destinationFile).errorMessage;
-
-                                        if (errorMessage == null) {
-                                            errorMessage = "";
-                                        }
-
-                                        if (!errorMessage.equals("")) {
-                                            responseJSON.put("MessageType", "Error");
-                                            responseJSON.put("errorMessage", errorMessage);
-                                            response.setStatus(Status.NOT_FOUND);
-                                        } else {
-                                            responseJSON.put("MessageType", "Success");
-                                        }
-
-                                        uploadInformationMap.remove(destinationFile);
-                                    }
-
-                                }
+                                responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
+                                logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
                             }
                         } else {
+                            response.setStatus(Status.UNAUTHORIZED);
                             responseJSON.put("MessageType", "Error");
                             responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
                             logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
                         }
-                    } else {
+                    }
+                    else{
+                        response.setStatus(Status.BAD_REQUEST);
                         responseJSON.put("MessageType", "Error");
-                        responseJSON.put("errorMessage", "Error uploading file: " + part.getFileName() + ": Insufficient privileges");
-                        logger.error("Error uploading file: " + part.getFileName() + ": Insufficient privileges");
+                        responseJSON.put("errorMessage", "Error uploading file: No file name provided");
+                        logger.error("Error uploading file: No file name provided");
                     }
 
                     break;
